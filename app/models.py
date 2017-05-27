@@ -6,7 +6,8 @@ import jwt
 import sys
 
 from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
-    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task
+    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task_completed, \
+    toggle_task_important
 
 
 class User(graphene.ObjectType):
@@ -24,7 +25,7 @@ class User(graphene.ObjectType):
     last_online = graphene.String()
 
     tasks = graphene.List(lambda: Task)
-    infos = graphene.List(lambda: Info)
+    info = graphene.List(lambda: Info)
 
     def resolve_groups(self, args, context, info):
         groups = []
@@ -53,7 +54,7 @@ class User(graphene.ObjectType):
             tasks.append(task)
         return [Task(**kwargs) for kwargs in tasks]
 
-    def resolve_infos(self, args, context, info):
+    def resolve_info(self, args, context, info):
         info_list = []
         for group_id in self.groups:
             info_from_group = mongo.db.info.find({'group_id': group_id})
@@ -379,6 +380,7 @@ class ToggleComplete(graphene.Mutation):
         result = toggle_task_completed(token, task_id)
         return ToggleComplete(success=result)
 
+
 class ToggleImportant(graphene.Mutation):
     class Input:
         token = graphene.String()
@@ -392,7 +394,6 @@ class ToggleImportant(graphene.Mutation):
         task_id = input.get('task_id')
         result = toggle_task_important(token, task_id)
         return ToggleImportant(success=result)
-
 
 
 class Mutation(graphene.ObjectType):
