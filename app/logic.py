@@ -85,6 +85,27 @@ def add_to_users(username, password, email, first_name=None, last_name=None, pho
     return True
 
 
+def change_settings(token, email, phone, password):
+    user = self_info(token)
+    if user is None:
+        return False
+    result = mongo.db.users.find_one({'username': user.username})
+    if email is not None:
+        result['email'] = email
+        print(result['username'], file=sys.stderr)
+        mongo.db.users.update_one({'username': user.username}, {'$set': {'email': result['email']}})
+    if phone is not None:
+        result['phone'] = phone
+        mongo.db.users.update_one({'username': user.username}, {'$set': {'phone': result['phone']}})
+    if password is not None:
+        sha = hashlib.sha256()
+        sha.update(password.encode('utf-8'))
+        password = sha.hexdigest()
+        result['password'] = password
+        mongo.db.users.update_one({'username': user.username}, {'$set': {'phone': result['phone']}})
+    return True
+
+
 def add_to_tasks(token, group_id, title, description=None, due_date=None):
     user = self_info(token)
     if is_admin(user.username, group_id):
@@ -104,7 +125,6 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
     return False
 
 
-
 def toggle_task_completed(token, task_id):
     user = self_info(token)
     task = mongo.db.tasks.find_one({'_id': task_id})
@@ -114,6 +134,7 @@ def toggle_task_completed(token, task_id):
     task['users_completed'].append(user.username)
     mongo.db.tasks.update_one({'_id': task}, {'$set': {'users_completed': task['users_completed']}})
     return True
+
 
 def toggle_task_important(token, task_id):
     user = self_info(token)
@@ -188,10 +209,7 @@ def register_to_group(token, group_id, password):
     if users is None or user.username in users:
         return False
     users.append(user.username)
-
-    creator.groups.append(group_id)
-
-    mongo.db.groups.update_one({'name': group_name}, {'$set': {'users': users}})
+    mongo.db.groups.update_one({'_id': group_id}, {'$set': {'users': users}})
     mongo.db.users.update_one({'username': user.username}, {'$set': {'groups': user.groups}})
     return True
 

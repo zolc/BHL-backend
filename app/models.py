@@ -7,7 +7,7 @@ import sys
 
 from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
     register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task_completed, \
-    toggle_task_important
+    toggle_task_important, change_settings
 
 
 class User(graphene.ObjectType):
@@ -149,6 +149,11 @@ class Task(graphene.ObjectType):
     due_date = graphene.String()
     done = graphene.Boolean()
     highlighted = graphene.Boolean()
+    group = graphene.Field(lambda: Group)
+
+    def resolve_group(self,args,context,info):
+        result = mongo.db.groups.find_one({'_id':self.group_id})
+        return Group(**result)
 
 
 class Info(graphene.ObjectType):
@@ -173,6 +178,25 @@ class Query(graphene.ObjectType):
                            _id=graphene.String(),
                            name=graphene.String(),
                            )
+
+
+class ChangeSettings(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        email = graphene.String(required=False)
+        phone = graphene.String(required=False)
+        password = graphene.String(required=False)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        email = input.get('email')
+        phone = input.get('phone')
+        password = input.get('password')
+        result = change_settings(token, email, phone, password)
+        return ChangeSettings(success=result)
 
 
 class SignUp(graphene.Mutation):
@@ -410,6 +434,7 @@ class Mutation(graphene.ObjectType):
     DeleteGroup = DeleteGroup.Field()
     ToggleComplete = ToggleComplete.Field()
     ToggleImportant = ToggleImportant.Field()
+    ChangeSettings = ChangeSettings.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

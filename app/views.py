@@ -56,54 +56,14 @@ def list_info():
 def reset_db():
     for collection in mongo.db.collection_names():
         mongo.db[collection].drop()
-    mongo.db["users"].insert_many(
-        [
-            {
-                "username": "testuser1",
-                "pass_hash": "Aa83SJe",
-                "email": "testuser1@example.com",
-                "first_name": "Jan",
-                "last_name": "Kowalski",
-                "phone": "123456789",
-                "groups": [],
-                "last_login_date": "2017-05-27 15:16:20"
-            },
-            {
-                "username": "testuser2",
-                "pass_hash": "2agdsS8U",
-                "email": "testuser2@example.com",
-                "first_name": "John",
-                "last_name": "Smith",
-                "phone": "000111222",
-                "groups": [],
-                "last_login_date": "2017-05-27 15:17:20"
-            },
-        ])
-    mongo.db["groups"].insert_many(
-        [
-            {
-                "name": "group1",
-                "password": "pass1",
-                "users": [],
-                "admins": []
-
-            },
-            {
-                "name": "group2",
-                "password": "a5hetbf",
-                "users": [],
-                "admins": []
-            },
-        ])
     add_to_users("guest", "test", "email@example.com", "gra", "żyna", "91487198")
-    add_to_users("adam", "adam", "mail@mail.com")
+    add_to_users("admin", "pass", "test@mini.pw.edu.pl", "Jan", "Brodka", "602100100")
+    add_to_users("student", "owip", "tester@mini.pl")
     add_to_users("qwerty", "uiop", "mail2@mail.com")
     _,token = sign_in("guest", "test")
-    print("Token:",file=sys.stderr)
-    print(token, file=sys.stderr)
-    create_group(token, "TESTGROUP", "PASS")
-
-    _id = mongo.db.groups.find_one({"name":"TESTGROUP"})["_id"]
+    create_group(token, "ASD 2 D4", "mini-d1234")
+    create_group(token, "SOP 2", "niktniezda")
+    _id = mongo.db.groups.find_one({"name":"tea"})["_id"]
 
     add_to_tasks(token, _id, "Title", "Description")
     add_to_info(token, _id, "Title", "Description")
