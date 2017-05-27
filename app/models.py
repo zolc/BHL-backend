@@ -42,6 +42,14 @@ class User(graphene.ObjectType):
         for group_id in self.groups:
             tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
         for task in tasks_from_group:
+            if self._id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self._id in task['users_completed']:
+                task['done'] = True
+            else:
+                task['done'] = False
             tasks.append(task)
         return [Task(**kwargs) for kwargs in tasks]
 
