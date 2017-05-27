@@ -376,8 +376,23 @@ class ToggleComplete(graphene.Mutation):
     def mutate(root, input, context, info):
         token = input.get('token')
         task_id = input.get('task_id')
-        result = toggle_task(token, task_id)
+        result = toggle_task_completed(token, task_id)
         return ToggleComplete(success=result)
+
+class ToggleImportant(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        task_id = graphene.String()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        task_id = input.get('task_id')
+        result = toggle_task_important(token, task_id)
+        return ToggleImportant(success=result)
+
 
 
 class Mutation(graphene.ObjectType):
@@ -393,6 +408,7 @@ class Mutation(graphene.ObjectType):
     RemoveFromGroup = RemoveFromGroup.Field()
     DeleteGroup = DeleteGroup.Field()
     ToggleComplete = ToggleComplete.Field()
+    ToggleImportant = ToggleImportant.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

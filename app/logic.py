@@ -105,7 +105,7 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
 
 
 
-def toggle_task(token, task_id):
+def toggle_task_completed(token, task_id):
     user = self_info(token)
     task = mongo.db.tasks.find_one({'_id': task_id})
     if user.username in task['users_completed']:
@@ -113,6 +113,16 @@ def toggle_task(token, task_id):
         return True
     task['users_completed'].append(user.username)
     mongo.db.tasks.update_one({'_id': task}, {'$set': {'users_completed': task['users_completed']}})
+    return True
+
+def toggle_task_important(token, task_id):
+    user = self_info(token)
+    task = mongo.db.tasks.find_one({'_id': task_id})
+    if user.username in task['users_completed']:
+        task['users_important'].remove(user.username)
+        return True
+    task['users_important'].append(user.username)
+    mongo.db.tasks.update_one({'_id': task}, {'$set': {'users_important': task['users_important']}})
     return True
 
 
