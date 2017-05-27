@@ -4,7 +4,9 @@ from graphene import relay
 from . import app, mongo
 import jwt
 import sys
-from .logic import add_to_users, sign_in, self_info, create_group, add_to_tasks, add_admin_to_group,register_to_group
+
+from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
+    register_to_group
 
 
 class User(graphene.ObjectType):
@@ -190,12 +192,31 @@ class RegisterToGroup(graphene.Mutation):
     success = graphene.String()
 
     @staticmethod
-    def mutate(root,input, context, info ):
+    def mutate(root, input, context, info):
         token = input.get('token')
         name = input.get('token')
         password = input.get('password')
-        result =register_to_group(token,name,password)
+        result = register_to_group(token, name, password)
         return RegisterToGroup(success=result)
+
+
+class AddInfo(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+        title = graphene.String(required=True)
+        description = graphene.String(required=False)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        group_name = input.get('group_name')
+        title = input.get('title')
+        description = input.get('description')
+        result = add_to_info(token, group_name, title, description)
+        return AddTask(success=result)
 
 
 class Mutation(graphene.ObjectType):
@@ -205,5 +226,6 @@ class Mutation(graphene.ObjectType):
     SelfInfo = SelfInfo.Field()
     CreateGroup = CreateGroup.Field()
     RegisterToGroup = RegisterToGroup.Field()
+
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

@@ -1,7 +1,8 @@
 from app import app, mongo
 from flask import Response
 
-from .logic import add_to_users, create_group, sign_in, add_to_tasks
+
+from .logic import add_to_users, create_group, sign_in, add_to_tasks,add_to_info
 
 @app.route('/')
 def index():
@@ -92,5 +93,5 @@ def reset_db():
     add_to_users("guest", "test", "email@example.com", "gra", "żyna", "91487198")
     create_group(sign_in("guest", "test"), "TESTGROUP", "PASS")
     add_to_tasks(sign_in("guest", "test"), "TESTGROUP", "Title", "Description")
-
+    add_to_info(sign_in("guest", "test"), "TESTGROUP", "Title", "Description")
     return 'DB RESETED'
