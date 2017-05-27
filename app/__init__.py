@@ -13,7 +13,7 @@ mongo = PyMongo(app)
 
 from app import views
 
-'''
+
 from app.models import schema
 
 app.add_url_rule(
@@ -24,4 +24,3 @@ app.add_url_rule(
         graphicql=True # GUI not working, why?
     )
 )
-'''
