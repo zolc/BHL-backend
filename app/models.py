@@ -6,7 +6,8 @@ import jwt
 import sys
 
 from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
-    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task_completed, toggle_task_important
+    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task_completed, \
+    toggle_task_important, change_settings
 
 
 class User(graphene.ObjectType):
@@ -23,34 +24,44 @@ class User(graphene.ObjectType):
     groups = graphene.List(lambda: Group)
     last_online = graphene.String()
 
-    # tasks = graphene.List(lambda: Task)
-    # infos = graphene.List(lambda: Info)
+    tasks = graphene.List(lambda: Task)
+    info = graphene.List(lambda: Info)
 
     def resolve_groups(self, args, context, info):
         groups = []
         group_id_list = mongo.db.users.find_one({"_id": self._id})['groups']
         for group_id in group_id_list:
             result = mongo.db.groups.find_one({"_id": group_id})
+            result['current_user_id'] = self._id
             groups.append(result)
         if len(groups) != 0:
             return [Group(**kwargs) for kwargs in groups]
         return None
 
-        # def resolve_tasks(self, args, context, info):
-        #     tasks = []
-        #     for group_id in self.groups:
-        #         tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
-        #         for task in tasks_from_group:
-        #             tasks.append(task)
-        #     return [Task(**kwargs) for kwargs in tasks]
-        #
-        # def resolve_infos(self, args, context, info):
-        #     infos = []
-        #     for group_id in self.groups:
-        #         infos_from_group = mongo.db.infos.find({'group_id': group_id})
-        #         for info in info_from_group:
-        #              infos.append(info)
-        #     return [Info(**kwargs) for kwargs in infos]
+    def resolve_tasks(self, args, context, info):
+        tasks = []
+        for group_id in self.groups:
+            tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
+        for task in tasks_from_group:
+            task['current_user_id'] = self._id
+            if self._id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self._id in task['users_completed']:
+                task['done'] = True
+            else:
+                task['done'] = False
+            tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
+
+    def resolve_info(self, args, context, info):
+        info_list = []
+        for group_id in self.groups:
+            info_from_group = mongo.db.info.find({'group_id': group_id})
+        for info in info_from_group:
+            info_list.append(info)
+        return [Info(**kwargs) for kwargs in info_list]
 
 
 class Group(graphene.ObjectType):
@@ -62,8 +73,10 @@ class Group(graphene.ObjectType):
     password = graphene.String()
     admins = graphene.List(lambda: User)
     users = graphene.List(lambda: User)
-    tasks = graphene.List(lambda: Task)
+    completed_tasks = graphene.List(lambda: Task)
+    uncompleted_tasks = graphene.List(lambda: Task)
     info = graphene.List(lambda: Info)
+    current_user_id = graphene.String()
 
     def resolve_users(self, args, context, info):
         users = []
@@ -85,17 +98,38 @@ class Group(graphene.ObjectType):
             return [User(**kwargs) for kwargs in users]
         return None
 
-    def resolve_tasks(self, args, context, info):
+    def resolve_completed_tasks(self, args, context, info):
+        print(self.current_user_id, file=sys.stderr)
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
         for task in tasks_from_group:
-            tasks.append(task)
+            if self.current_user_id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self.current_user_id in task['users_completed']:
+                task['done'] = True
+                tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
+
+    def resolve_uncompleted_tasks(self, args, context, info):
+        print(self.current_user_id, file=sys.stderr)
+        tasks = []
+        tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
+        for task in tasks_from_group:
+            if self.current_user_id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self.current_user_id not in task['users_completed']:
+                task['done'] = True
+                tasks.append(task)
+
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_info(self, args, context, info):
         info_list = []
         info_from_group = mongo.db.info.find({'group_id': self._id})
-        print(info_from_group, file=sys.stderr)
         for info in info_from_group:
             info_list.append(info)
         return [Info(**kwargs) for kwargs in info_list]
@@ -116,6 +150,13 @@ class Task(graphene.ObjectType):
     due_date = graphene.String()
     done = graphene.Boolean()
     highlighted = graphene.Boolean()
+    group = graphene.Field(lambda: Group)
+    current_user_id = graphene.String()
+
+    def resolve_group(self,args,context,info):
+        result = mongo.db.groups.find_one({'_id':self.group_id})
+        result['current_user_id'] = self.current_user_id
+        return Group(**result)
 
 
 class Info(graphene.ObjectType):
@@ -140,6 +181,25 @@ class Query(graphene.ObjectType):
                            _id=graphene.String(),
                            name=graphene.String(),
                            )
+
+
+class ChangeSettings(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        email = graphene.String(required=False)
+        phone = graphene.String(required=False)
+        password = graphene.String(required=False)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        email = input.get('email')
+        phone = input.get('phone')
+        password = input.get('password')
+        result = change_settings(token, email, phone, password)
+        return ChangeSettings(success=result)
 
 
 class SignUp(graphene.Mutation):
@@ -347,6 +407,7 @@ class ToggleComplete(graphene.Mutation):
         result = toggle_task_completed(token, task_id)
         return ToggleComplete(success=result)
 
+
 class ToggleImportant(graphene.Mutation):
     class Input:
         token = graphene.String()
@@ -360,7 +421,6 @@ class ToggleImportant(graphene.Mutation):
         task_id = input.get('task_id')
         result = toggle_task_important(token, task_id)
         return ToggleImportant(success=result)
-
 
 
 class Mutation(graphene.ObjectType):
@@ -377,6 +437,7 @@ class Mutation(graphene.ObjectType):
     DeleteGroup = DeleteGroup.Field()
     ToggleComplete = ToggleComplete.Field()
     ToggleImportant = ToggleImportant.Field()
+    ChangeSettings = ChangeSettings.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)
