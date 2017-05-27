@@ -22,7 +22,9 @@ class User(graphene.ObjectType):
     pass_hash = graphene.String()
     groups = graphene.List(lambda: Group)
     last_online = graphene.String()
-    tasks = graphene.List(lambda: Task)
+
+    # tasks = graphene.List(lambda: Task)
+    # infos = graphene.List(lambda: Info)
 
     def resolve_groups(self, args, context, info):
         groups = []
@@ -34,13 +36,21 @@ class User(graphene.ObjectType):
             return [Group(**kwargs) for kwargs in groups]
         return None
 
-    def resolve_tasks(self, args, context, info):
-        tasks = []
-        for group_id in self.groups:
-            tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
-            for task in tasks_from_group:
-                tasks.append(task)
-        return [Task(**kwargs) for kwargs in tasks]
+        # def resolve_tasks(self, args, context, info):
+        #     tasks = []
+        #     for group_id in self.groups:
+        #         tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
+        #         for task in tasks_from_group:
+        #             tasks.append(task)
+        #     return [Task(**kwargs) for kwargs in tasks]
+        #
+        # def resolve_infos(self, args, context, info):
+        #     infos = []
+        #     for group_id in self.groups:
+        #         infos_from_group = mongo.db.infos.find({'group_id': group_id})
+        #         for info in info_from_group:
+        #              infos.append(info)
+        #     return [Info(**kwargs) for kwargs in infos]
 
 
 class Group(graphene.ObjectType):
@@ -52,6 +62,8 @@ class Group(graphene.ObjectType):
     password = graphene.String()
     admins = graphene.List(lambda: User)
     users = graphene.List(lambda: User)
+    tasks = graphene.List(lambda: Task)
+    info = graphene.List(lambda: Info)
 
     def resolve_users(self, args, context, info):
         users = []
@@ -72,6 +84,21 @@ class Group(graphene.ObjectType):
         if len(users) != 0:
             return [User(**kwargs) for kwargs in users]
         return None
+
+    def resolve_tasks(self, args, context, info):
+        tasks = []
+        tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
+        for task in tasks_from_group:
+            tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
+
+    def resolve_info(self, args, context, info):
+        info_list = []
+        info_from_group = mongo.db.info.find({'group_id': self._id})
+        print(info_from_group, file=sys.stderr)
+        for info in info_from_group:
+            info_list.append(info)
+        return [Info(**kwargs) for kwargs in info_list]
 
 
 class Task(graphene.ObjectType):
@@ -100,6 +127,8 @@ class Info(graphene.ObjectType):
     title = graphene.String()
     description = graphene.String()
     published_date = graphene.String()
+    creator = graphene.String()
+    group_id = graphene.String()
 
 
 class Query(graphene.ObjectType):
