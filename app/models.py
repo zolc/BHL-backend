@@ -31,26 +31,11 @@ class User(graphene.ObjectType):
         group_id_list = mongo.db.users.find_one({"_id": self._id})['groups']
         for group_id in group_id_list:
             result = mongo.db.groups.find_one({"_id": group_id})
+            result['current_user_id'] = self._id
             groups.append(result)
         if len(groups) != 0:
             return [Group(**kwargs) for kwargs in groups]
         return None
-
-        # def resolve_tasks(self, args, context, info):
-        #     tasks = []
-        #     for group_id in self.groups:
-        #         tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
-        #         for task in tasks_from_group:
-        #             tasks.append(task)
-        #     return [Task(**kwargs) for kwargs in tasks]
-        #
-        # def resolve_infos(self, args, context, info):
-        #     infos = []
-        #     for group_id in self.groups:
-        #         infos_from_group = mongo.db.infos.find({'group_id': group_id})
-        #         for info in info_from_group:
-        #              infos.append(info)
-        #     return [Info(**kwargs) for kwargs in infos]
 
 
 class Group(graphene.ObjectType):
@@ -62,8 +47,10 @@ class Group(graphene.ObjectType):
     password = graphene.String()
     admins = graphene.List(lambda: User)
     users = graphene.List(lambda: User)
-    tasks = graphene.List(lambda: Task)
+    completed_tasks = graphene.List(lambda: Task)
+    uncompleted_tasks = graphene.List(lambda: Task)
     info = graphene.List(lambda: Info)
+    current_user_id = graphene.String()
 
     def resolve_users(self, args, context, info):
         users = []
@@ -85,17 +72,38 @@ class Group(graphene.ObjectType):
             return [User(**kwargs) for kwargs in users]
         return None
 
-    def resolve_tasks(self, args, context, info):
+    def resolve_completed_tasks(self, args, context, info):
+        print(self.current_user_id, file=sys.stderr)
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
         for task in tasks_from_group:
-            tasks.append(task)
+            if self.current_user_id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self.current_user_id in task['users_completed']:
+                task['done'] = True
+                tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
+
+    def resolve_uncompleted_tasks(self, args, context, info):
+        print(self.current_user_id, file=sys.stderr)
+        tasks = []
+        tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
+        for task in tasks_from_group:
+            if self.current_user_id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self.current_user_id not in task['users_completed']:
+                task['done'] = True
+                tasks.append(task)
+
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_info(self, args, context, info):
         info_list = []
         info_from_group = mongo.db.info.find({'group_id': self._id})
-        print(info_from_group, file=sys.stderr)
         for info in info_from_group:
             info_list.append(info)
         return [Info(**kwargs) for kwargs in info_list]
