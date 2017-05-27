@@ -23,8 +23,8 @@ class User(graphene.ObjectType):
     groups = graphene.List(lambda: Group)
     last_online = graphene.String()
 
-    # tasks = graphene.List(lambda: Task)
-    # infos = graphene.List(lambda: Info)
+    tasks = graphene.List(lambda: Task)
+    infos = graphene.List(lambda: Info)
 
     def resolve_groups(self, args, context, info):
         groups = []
@@ -36,6 +36,22 @@ class User(graphene.ObjectType):
         if len(groups) != 0:
             return [Group(**kwargs) for kwargs in groups]
         return None
+
+    def resolve_tasks(self, args, context, info):
+        tasks = []
+        for group_id in self.groups:
+            tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
+        for task in tasks_from_group:
+            tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
+
+    def resolve_infos(self, args, context, info):
+        info_list = []
+        for group_id in self.groups:
+            info_from_group = mongo.db.info.find({'group_id': group_id})
+        for info in info_from_group:
+            info_list.append(info)
+        return [Info(**kwargs) for kwargs in info_list]
 
 
 class Group(graphene.ObjectType):
