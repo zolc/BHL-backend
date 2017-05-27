@@ -96,6 +96,8 @@ def reset_db():
             },
         ])
     add_to_users("guest", "test", "email@example.com", "gra", "żyna", "91487198")
+    add_to_users("adam", "adam", "mail@mail.com")
+    add_to_users("qwerty", "uiop", "mail2@mail.com")
     _,token = sign_in("guest", "test")
     print("Token:",file=sys.stderr)
     print(token, file=sys.stderr)

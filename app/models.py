@@ -13,7 +13,7 @@ class User(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
-    _id = graphene.ID()
+    _id = graphene.String()
     username = graphene.String()
     email = graphene.String()
     first_name = graphene.String()
@@ -38,7 +38,7 @@ class Group(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
-    _id = graphene.ID()
+    _id = graphene.String()
     name = graphene.String()
     password = graphene.String()
     admins = graphene.List(lambda: User)
