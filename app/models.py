@@ -4,7 +4,7 @@ from graphene import relay
 from . import app, mongo
 import jwt
 import sys
-from .logic import add_to_users, sign_in, self_info, create_group
+from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks
 
 
 class User(graphene.ObjectType):
@@ -96,26 +96,6 @@ class SignUp(graphene.Mutation):
         return SignUp(success=result)
 
 
-class AddTask(graphene.Mutation):
-    class Input:
-        token = graphene.String(required=True)
-        group_name = graphene.String(required=True)
-        title = graphene.String(required=True)
-        description = graphene.String(required=False)
-        due_date= graphene.String(required=False)
-
-    success = graphene.Boolean()
-
-    @staticmethod
-    def mutate(root, input, context, info):
-        group_name = input.get('group_name')
-        title = input.get('title')
-        description = input.get('description')
-        due_date = input.get('due_date')
-        result = add_to_tasks(token, group_name, title, description, due_date)
-        return AddTask(success=result)
-
-
 class SignIn(graphene.Mutation):
     class Input:
         username = graphene.String()
@@ -160,6 +140,46 @@ class CreateGroup(graphene.Mutation):
         password = input.get('password')
         result = create_group(token, name, password)
         return CreateGroup(success=result)
+
+
+class AddTask(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+        title = graphene.String(required=True)
+        description = graphene.String(required=False)
+        due_date= graphene.String(required=False)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        group_name = input.get('group_name')
+        title = input.get('title')
+        description = input.get('description')
+        due_date = input.get('due_date')
+        result = add_to_tasks(token, group_name, title, description, due_date)
+        return AddTask(success=result)
+
+
+class AddInfo(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+        title = graphene.String(required=True)
+        description = graphene.String(required=False)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        group_name = input.get('group_name')
+        title = input.get('title')
+        description = input.get('description')
+        result = add_to_info(token, group_name, title, description)
+        return AddTask(success=result)
 
 
 class Mutation(graphene.ObjectType):
