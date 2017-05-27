@@ -45,6 +45,16 @@ class Group(graphene.ObjectType):
 
     def resolve_users(self, args, context, info):
         users = []
+        user_id_list = mongo.db.groups.find_one({"name": self.name})['users']
+        for username in user_id_list:
+            result = mongo.db.users.find_one({"username": username})
+            users.append(result)
+        if len(users) != 0:
+            return [User(**kwargs) for kwargs in users]
+        return None
+
+    def resolve_admins(self, args, context, info):
+        users = []
         user_id_list = mongo.db.groups.find_one({"name": self.name})['admins']
         for username in user_id_list:
             result = mongo.db.users.find_one({"username": username})
