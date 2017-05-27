@@ -11,7 +11,7 @@ class User(graphene.ObjectType):
         interfaces = (relay.Node,)
 
     _id = graphene.ID()
-    login = graphene.String()
+    username = graphene.String()
     email = graphene.String()
     first_name = graphene.String()
     last_name = graphene.String()
@@ -37,23 +37,34 @@ class Group(graphene.ObjectType):
         return None
 
 
-class Task:
+class Task(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
     _id = graphene.ID()
     title = graphene.String()
     description = graphene.String()
+    group = Group()
     published_date = graphene.String()
     due_date = graphene.String()
     done = graphene.Boolean()
     highlighted = graphene.Boolean()
 
+class Info(graphene.ObjectType):
+    class Meta:
+        interfaces = (relay.Node,)
+
+    _id = graphene.ID()
+    group = Group()
+    title = graphene.String()
+    description = graphene.String()
+    published_date = graphene.String()
+
 
 class Query(graphene.ObjectType):
     users = graphene.List(User,
                           _id=graphene.ID(),
-                          login=graphene.String()
+                          username=graphene.String()
                           )
     groups = graphene.List(Group,
                            _id=graphene.ID(),
@@ -63,7 +74,7 @@ class Query(graphene.ObjectType):
 
 class SignUp(graphene.Mutation):
     class Input:
-        login = graphene.String(required=True)
+        username = graphene.String(required=True)
         password = graphene.String(required=True)
         email = graphene.String(required=True)
         first_name = graphene.String(required=False)
@@ -74,18 +85,39 @@ class SignUp(graphene.Mutation):
 
     @staticmethod
     def mutate(root, input, context, info):
-        login = input.get('login')
+        username = input.get('username')
         password = input.get('password')
         email = input.get('email')
         first_name = input.get('first_name')
         last_name = input.get('last_name')
         phone = input.get('phone')
-        result = add_to_users(login, password, email, first_name, last_name, phone)
+        result = add_to_users(username, password, email, first_name, last_name, phone)
         return SignUp(success=result)
+
+
+class AddTask(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+        title = graphene.String(required=True)
+        description = graphene.String(required=False)
+        due_date= graphene.String(required=False)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        group_name = input.get('group_name')
+        title = input.get('title')
+        description = input.get('description')
+        due_date = input.get('due_date')
+        result = add_to_tasks(token, group_name, title, description, due_date)
+        return AddTask(success=result)
 
 
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
+    AddTask = AddTask.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

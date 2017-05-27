@@ -33,7 +33,7 @@ def reset_db():
     mongo.db["users"].insert_many(
         [
             {
-                "login": "testuser1",
+                "username": "testuser1",
                 "pass_hash": "Aa83SJe",
                 "email": "testuser1@example.com",
                 "first_name": "Jan",
@@ -43,7 +43,7 @@ def reset_db():
                 "last_login_date": "2017-05-27 15:16:20"
             },
             {
-                "login": "testuser2",
+                "username": "testuser2",
                 "pass_hash": "2agdsS8U",
                 "email": "testuser2@example.com",
                 "first_name": "John",

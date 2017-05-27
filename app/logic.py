@@ -29,3 +29,16 @@ def add_to_users(login, password, email, first_name, last_name, phone):
     print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.users.insert_one(record)
     return True
+
+def add_to_tasks(token, group_name, title, description, due_date):
+    group_id = mongo.db['groups'].find_one({"name":group_name})
+    record = {
+        "group_id": group_id,
+        "title": title,
+        "description": description,
+        "published_date": datetime.now()
+        "users_completed": []
+        "users_important": []
+        "creator_id":
+    }
+
