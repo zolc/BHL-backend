@@ -101,6 +101,7 @@ class SignIn(graphene.Mutation):
         username = graphene.String()
         password = graphene.String()
 
+    success = graphene.Boolean()
     token = graphene.String()
 
     @staticmethod
@@ -108,21 +109,21 @@ class SignIn(graphene.Mutation):
         username = input.get('username')
         password = input.get('password')
         print(password, file=sys.stderr)
-        result = sign_in(username, password)
-        return SignIn(token=result)
+        (success, token) = sign_in(username, password)
+        return SignIn(success=success, token=token)
 
 
 class SelfInfo(graphene.Mutation):
     class Input:
         token = graphene.String()
 
-    User = graphene.Field(User)
+    user = graphene.Field(User)
 
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
         result = self_info(token)
-        return SelfInfo(User=result)
+        return SelfInfo(user=result)
 
 
 class CreateGroup(graphene.Mutation):

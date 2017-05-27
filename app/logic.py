@@ -14,14 +14,14 @@ def sign_in(username, password):
     result = mongo.db.users.find_one({'username': username})
     print(result, file=sys.stderr)
     if result is None:
-        return ""
+        return (False, "")
     sha = hashlib.sha256()
     sha.update(password.encode('utf-8'))
     password = sha.hexdigest()
     if password == result['pass_hash']:
         encoded = jwt.encode({'username': username}, 'secret', algorithm='HS256').decode("utf-8")
-        return encoded
-    return ""
+        return (True, encoded)
+    return (False, "")
 
 
 def self_info(token):
