@@ -19,7 +19,18 @@ class User(graphene.ObjectType):
     first_name = graphene.String()
     last_name = graphene.String()
     phone = graphene.String()
+    pass_hash = graphene.String()
     groups = graphene.List(lambda: Group)
+
+    def resolve_groups(self, args, context, info):
+        groups = []
+        group_id_list = mongo.db.users.find_one({"username": self.username})['groups']
+        for group_name in group_id_list:
+            result = mongo.db.groups.find_one({"name": group_name})
+            groups.append(result)
+        if len(groups) != 0:
+            return [Group(**kwargs) for kwargs in groups]
+        return None
 
 
 class Group(graphene.ObjectType):
@@ -28,13 +39,15 @@ class Group(graphene.ObjectType):
 
     _id = graphene.ID()
     name = graphene.String()
+    password = graphene.String()
+    admins = graphene.List(lambda : User)
     users = graphene.List(lambda: User)
 
     def resolve_users(self, args, context, info):
         users = []
-        user_id_list = mongo.db.groups.find({"_id": self._id})['users']
-        for user_id in user_id_list:
-            result = mongo.db.users.find_one({"_id": user_id})
+        user_id_list = mongo.db.groups.find_one({"name": self.name})['admins']
+        for username in user_id_list:
+            result = mongo.db.users.find_one({"username": username})
             users.append(result)
         if len(users) != 0:
             return [User(**kwargs) for kwargs in users]
@@ -123,8 +136,8 @@ class AddTask(graphene.Mutation):
 
 class SignIn(graphene.Mutation):
     class Input:
-        username = graphene.String()
-        password = graphene.String()
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
 
     success = graphene.Boolean()
     token = graphene.String()
@@ -140,7 +153,7 @@ class SignIn(graphene.Mutation):
 
 class SelfInfo(graphene.Mutation):
     class Input:
-        token = graphene.String()
+        token = graphene.String(required=True)
 
     user = graphene.Field(User)
 
@@ -153,9 +166,9 @@ class SelfInfo(graphene.Mutation):
 
 class CreateGroup(graphene.Mutation):
     class Input:
-        token = graphene.String()
-        group_name = graphene.String()
-        password = graphene.String()
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+        password = graphene.String(required=True)
 
     success = graphene.String()
 
@@ -170,9 +183,9 @@ class CreateGroup(graphene.Mutation):
 
 class AddAdminToGroup(graphene.Mutation):
     class Input:
-        token = graphene.String()
-        username = graphene.String()
-        group_name = graphene.String()
+        token = graphene.String(required=True)
+        username = graphene.String(required=True)
+        group_name = graphene.String(required=True)
 
     success = graphene.Boolean()
 
@@ -204,16 +217,16 @@ class RemoveAdminFromGroup(graphene.Mutation):
 
 class RegisterToGroup(graphene.Mutation):
     class Input:
-        token = graphene.String()
-        group_name = graphene.String()
-        password = graphene.String()
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+        password = graphene.String(required=True)
 
     success = graphene.String()
 
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
-        group_name= input.get('group_name')
+        group_name = input.get('group_name')
         password = input.get('password')
         result = register_to_group(token, group_name, password)
         return RegisterToGroup(success=result)

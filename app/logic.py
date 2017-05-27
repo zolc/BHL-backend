@@ -37,14 +37,14 @@ def self_info(token):
     )
 
 
-def create_group(token, name, password):
+def create_group(token, group_name, password):
     creator = self_info(token)
-    result = mongo.db.groups.find_one({'name': name})
+    result = mongo.db.groups.find_one({'name': group_name})
     print(result, file=sys.stderr)
     if result is not None:
         return False
     record = {
-        "name": name,
+        "name": group_name,
         "password": password,
         "users": [],
         "admins": [creator.username]
@@ -52,6 +52,8 @@ def create_group(token, name, password):
     }
     print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.groups.insert_one(record)
+    creator.groups.append(group_name)
+    mongo.db.users.update_one({'username': creator.username}, {'$set': {'groups': creator.groups}})
     return True
 
 

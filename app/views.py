@@ -1,8 +1,8 @@
 from app import app, mongo
 from flask import Response
+import sys
+from .logic import add_to_users, create_group, sign_in, add_to_tasks, add_to_info
 
-
-from .logic import add_to_users, create_group, sign_in, add_to_tasks,add_to_info
 
 @app.route('/')
 def index():
@@ -21,6 +21,7 @@ def list_users():
         file += '\n'
     return Response(file, mimetype='text')
 
+
 @app.route('/listgroups')
 def list_groups():
     cursor = mongo.db.groups.find()
@@ -29,6 +30,7 @@ def list_groups():
         file += str(doc)
         file += '\n'
     return Response(file, mimetype='text')
+
 
 @app.route('/listtasks')
 def list_tasks():
@@ -39,6 +41,7 @@ def list_tasks():
         file += '\n'
     return Response(file, mimetype='text')
 
+
 @app.route('/listinfo')
 def list_info():
     cursor = mongo.db.info.find()
@@ -47,6 +50,7 @@ def list_info():
         file += str(doc)
         file += '\n'
     return Response(file, mimetype='text')
+
 
 @app.route('/resetdb')
 def reset_db():
@@ -92,7 +96,10 @@ def reset_db():
             },
         ])
     add_to_users("guest", "test", "email@example.com", "gra", "żyna", "91487198")
-    create_group(sign_in("guest", "test"), "TESTGROUP", "PASS")
-    add_to_tasks(sign_in("guest", "test"), "TESTGROUP", "Title", "Description")
-    add_to_info(sign_in("guest", "test"), "TESTGROUP", "Title", "Description")
+    _,token = sign_in("guest", "test")
+    print("Token:",file=sys.stderr)
+    print(token, file=sys.stderr)
+    create_group(token, "TESTGROUP", "PASS")
+    add_to_tasks(token, "TESTGROUP", "Title", "Description")
+    add_to_info(token, "TESTGROUP", "Title", "Description")
     return 'DB RESETED'
