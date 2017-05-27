@@ -91,7 +91,7 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
     user = self_info(token)
     if is_admin(user.username, group_id):
         record = {
-            "group_id": group_id,
+            "group_name": group_name,
             "title": title,
             "description": description,
             "published_date": datetime.now(),
@@ -106,7 +106,19 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
     return False
 
 
-def add_to_info(token, group_id, title, description=None):
+
+def toggle_task(token, task_id):
+    user = self_info(token)
+    task = mongo.db.tasks.find_one({'_id': task_id})
+    if user.username in task['users_completed']:
+        task['users_completed'].remove(user.username)
+        return True
+    task['users_completed'].append(user.username)
+    mongo.db.tasks.update_one({'_id': task}, {'$set': {'users_completed': task['users_completed']}})
+    return True
+
+
+def add_to_info(token, group_name, title, description=None):
     user = self_info(token)
     if is_admin(user.username, group_id):
         record = {
