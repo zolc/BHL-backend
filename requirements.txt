@@ -1,0 +1,6 @@
+flask
+flask_pymongo
+graphene
+requests
+flask_graphql
+PyJWT
