@@ -102,6 +102,9 @@ def reset_db():
     print("Token:",file=sys.stderr)
     print(token, file=sys.stderr)
     create_group(token, "TESTGROUP", "PASS")
-    add_to_tasks(token, "TESTGROUP", "Title", "Description")
-    add_to_info(token, "TESTGROUP", "Title", "Description")
+
+    _id = mongo.db.groups.find_one({"name":"TESTGROUP"})["_id"]
+
+    add_to_tasks(token, _id, "Title", "Description")
+    add_to_info(token, _id, "Title", "Description")
     return 'DB RESETED'

@@ -12,7 +12,6 @@ import jwt
 
 def sign_in(username, password):
     result = mongo.db.users.find_one({'username': username})
-    print(result, file=sys.stderr)
     if result is None:
         return (False, "")
     sha = hashlib.sha256()
@@ -57,16 +56,16 @@ def create_group(token, group_name, password):
         "admins": [creator.username]
     }
     print('Adding {}'.format(record), file=sys.stderr)
-    _id = mongo.db.groups.insert_one(record)
+    _id = mongo.db.groups.insert_one(record).inserted_id
 
     creator.groups.append(_id)
-    mongo.db.users.update_one({'username': creator.username}, {'$set': {'groups': creator.groups}})
+    print(creator.groups, file=sys.stderr)
+    mongo.db.users.update_one({'_id': creator._id}, {'$set': {'groups': creator.groups}})
     return True
 
 
 def add_to_users(username, password, email, first_name=None, last_name=None, phone=None):
     result = mongo.db.users.find_one({'username': username})
-    print(result, file=sys.stderr)
     if result is not None:
         return False
     sha = hashlib.sha256()
@@ -82,7 +81,6 @@ def add_to_users(username, password, email, first_name=None, last_name=None, pho
         "groups": [],
         "last_online": datetime.now()
     }
-    print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.users.insert_one(record)
     return True
 
@@ -91,7 +89,7 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
     user = self_info(token)
     if is_admin(user.username, group_id):
         record = {
-            "group_name": group_name,
+            "group_id": group_id,
             "title": title,
             "description": description,
             "published_date": datetime.now(),
@@ -118,7 +116,7 @@ def toggle_task(token, task_id):
     return True
 
 
-def add_to_info(token, group_name, title, description=None):
+def add_to_info(token, group_id, title, description=None):
     user = self_info(token)
     if is_admin(user.username, group_id):
         record = {
