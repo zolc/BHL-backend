@@ -43,6 +43,7 @@ class User(graphene.ObjectType):
         for group_id in self.groups:
             tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
         for task in tasks_from_group:
+            task['current_user_id'] = self._id
             if self._id in task['users_important']:
                 task['highlighted'] = True
             else:
@@ -150,9 +151,11 @@ class Task(graphene.ObjectType):
     done = graphene.Boolean()
     highlighted = graphene.Boolean()
     group = graphene.Field(lambda: Group)
+    current_user_id = graphene.String()
 
     def resolve_group(self,args,context,info):
         result = mongo.db.groups.find_one({'_id':self.group_id})
+        result['current_user_id'] = self.current_user_id
         return Group(**result)
 
 
