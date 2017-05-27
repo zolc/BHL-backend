@@ -3,7 +3,8 @@ from sys import stderr
 from graphene import relay
 from . import app, mongo
 import jwt
-from .logic import add_to_users
+import sys
+from .logic import add_to_users, sign_in, self_info
 
 
 class User(graphene.ObjectType):
@@ -115,9 +116,41 @@ class AddTask(graphene.Mutation):
         return AddTask(success=result)
 
 
+class SignIn(graphene.Mutation):
+    class Input:
+        username = graphene.String()
+        password = graphene.String()
+
+    token = graphene.String()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        username = input.get('username')
+        password = input.get('password')
+        print(password, file=sys.stderr)
+        result = sign_in(username, password)
+        return SignIn(token=result)
+
+
+class SelfInfo(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+
+    User = graphene.Field(User)
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        result = self_info(token)
+        return SelfInfo(User=result)
+
+
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
     AddTask = AddTask.Field()
+    SignIn = SignIn.Field()
+    SelfInfo = SelfInfo.Field()
+
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

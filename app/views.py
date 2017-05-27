@@ -1,9 +1,13 @@
 from app import app, mongo
 from flask import Response
 
+
 @app.route('/')
 def index():
-    return 'Hello world!'
+    text = '''
+    token(guest) eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6Imd1ZXN0In0.QWIrBbwfGi6PDmWWEG-LEmmcXVaQNH68GOzLeTxBnI4
+    '''
+    return text
 
 
 @app.route('/listusers')
@@ -25,6 +29,14 @@ def list_groups():
         file += '\n'
     return Response(file, mimetype='text')
 
+@app.route('/listtasks')
+def list_tasks():
+    cursor = mongo.db.tasks.find()
+    file = ""
+    for doc in cursor:
+        file += str(doc)
+        file += '\n'
+    return Response(file, mimetype='text')
 
 @app.route('/resetdb')
 def reset_db():
