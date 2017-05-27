@@ -4,7 +4,7 @@ from graphene import relay
 from . import app, mongo
 import jwt
 import sys
-from .logic import add_to_users, sign_in, self_info, create_group
+from .logic import add_to_users, sign_in, self_info, create_group, add_to_tasks, add_admin_to_group,register_to_group
 
 
 class User(graphene.ObjectType):
@@ -50,6 +50,7 @@ class Task(graphene.ObjectType):
     due_date = graphene.String()
     done = graphene.Boolean()
     highlighted = graphene.Boolean()
+
 
 class Info(graphene.ObjectType):
     class Meta:
@@ -102,7 +103,7 @@ class AddTask(graphene.Mutation):
         group_name = graphene.String(required=True)
         title = graphene.String(required=True)
         description = graphene.String(required=False)
-        due_date= graphene.String(required=False)
+        due_date = graphene.String(required=False)
 
     success = graphene.Boolean()
 
@@ -112,6 +113,7 @@ class AddTask(graphene.Mutation):
         title = input.get('title')
         description = input.get('description')
         due_date = input.get('due_date')
+        token = input.get('token')
         result = add_to_tasks(token, group_name, title, description, due_date)
         return AddTask(success=result)
 
@@ -162,12 +164,46 @@ class CreateGroup(graphene.Mutation):
         return CreateGroup(success=result)
 
 
+class AddAdminToGroup(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        username = graphene.String()
+        group_name = graphene.String()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        username = input.get('username')
+        group_name = input.get('group_name')
+        result = add_admin_to_group(token, username, group_name)
+        return AddAdminToGroup(success=result)
+
+
+class RegisterToGroup(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        name = graphene.String()
+        password = graphene.String()
+
+    success = graphene.String()
+
+    @staticmethod
+    def mutate(root,input, context, info ):
+        token = input.get('token')
+        name = input.get('token')
+        password = input.get('password')
+        result =register_to_group(token,name,password)
+        return RegisterToGroup(success=result)
+
+
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
     AddTask = AddTask.Field()
     SignIn = SignIn.Field()
     SelfInfo = SelfInfo.Field()
     CreateGroup = CreateGroup.Field()
-
+    RegisterToGroup = RegisterToGroup.Field()
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

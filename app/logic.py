@@ -10,8 +10,6 @@ import base64
 import jwt
 
 
-from .models import User
-
 def add_to_users(username, password, email, first_name, last_name, phone):
     result = mongo.db.users.find_one({'username': username})
     print(result, file=sys.stderr)
@@ -32,33 +30,6 @@ def add_to_users(username, password, email, first_name, last_name, phone):
     mongo.db.users.insert_one(record)
     return True
 
-def add_to_tasks(token, group_name, title, description, due_date):
-    user = self_info(token)
-    if is_admin(user.username, group_name):
-        group_id = mongo.db['groups'].find_one({"name":group_name})["_id"]
-        record = {
-            "group_id": group_id,
-            "title": title,
-            "description": description,
-            "published_date": datetime.now(),
-            "due_date": due_date,
-            "users_completed": [],
-            "users_important": [],
-            "creator_id": user.username
-        }
-        print('Adding {} to tasks'.format(record), file=sys.stderr)
-        mongo.db.tasks.insert_one(record)
-        return True
-    return False
-
-def is_admin(username, group_name):
-    group = mongo.db['groups'].find_one({"name":group_name})
-    if group is not None:
-        admin_list = group['admins']
-        if username in admin_list:
-            return True
-    return False
-
 
 def sign_in(username, password):
     result = mongo.db.users.find_one({'username': username})
@@ -78,13 +49,45 @@ def self_info(token):
     from .models import User
     decoded = jwt.decode(token, 'secret', algorithms=['HS256'])
     result = mongo.db.users.find_one({'username': str(decoded['username'])})
-    return User(
-        username=result['username'],
-        email=result['email'],
-        first_name=result['first_name'],
-        last_name=result['last_name'],
-        phone=result['phone']
-    )
+    if result is not None:
+        return User(
+            username=result['username'],
+            email=result['email'],
+            first_name=result['first_name'],
+            last_name=result['last_name'],
+            phone=result['phone']
+        )
+    else:
+        return None
+
+
+def add_to_tasks(token, group_name, title, description, due_date):
+    user = self_info(token)
+    if is_admin(user.username, group_name):
+        group_id = mongo.db['groups'].find_one({"name": group_name})["_id"]
+        record = {
+            "group_id": group_id,
+            "title": title,
+            "description": description,
+            "published_date": datetime.now(),
+            "due_date": due_date,
+            "users_completed": [],
+            "users_important": [],
+            "creator_id": user.username
+        }
+        print('Adding {} to tasks'.format(record), file=sys.stderr)
+        mongo.db.tasks.insert_one(record)
+        return True
+    return False
+
+
+def is_admin(username, group_name):
+    group = mongo.db['groups'].find_one({"name": group_name})
+    if group is not None:
+        admin_list = group['admins']
+        if username in admin_list:
+            return True
+    return False
 
 
 def create_group(token, name, password):
@@ -95,10 +98,35 @@ def create_group(token, name, password):
         return False
     record = {
         "name": name,
-        "pass_hash": password,
+        "password": password,
         "users": [],
         "admins": [creator.username]
     }
     print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.groups.insert_one(record)
+    return True
+
+
+def add_admin_to_group(token, username, group_name):
+    user = self_info(token)
+    if is_admin(user.username, group_name):
+        group_admins = mongo.db['groups'].find_one({"name": group_name})["admins"]
+        group_admins.append(username)
+        mongo.db.groups.update_one({'name': group_name}, {'admins': group_admins})
+        return True
+    return False
+
+
+def register_to_group(token, group_name, password):
+    user = self_info(token)
+    if user is None:
+        return False
+    result = mongo.db.groups.find_one({'name': group_name})
+    if result is None or password != result.password:
+        return False
+    users = result.users
+    if users is None or user.username in users:
+        return False
+    users.append(user.username)
+    mongo.db.groups.update_one({'name': group_name}, {'users': users})
     return True

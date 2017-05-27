@@ -1,6 +1,7 @@
 from app import app, mongo
 from flask import Response
 
+from .logic import add_to_users, create_group, sign_in, add_to_tasks
 
 @app.route('/')
 def index():
@@ -19,7 +20,6 @@ def list_users():
         file += '\n'
     return Response(file, mimetype='text')
 
-
 @app.route('/listgroups')
 def list_groups():
     cursor = mongo.db.groups.find()
@@ -32,6 +32,15 @@ def list_groups():
 @app.route('/listtasks')
 def list_tasks():
     cursor = mongo.db.tasks.find()
+    file = ""
+    for doc in cursor:
+        file += str(doc)
+        file += '\n'
+    return Response(file, mimetype='text')
+
+@app.route('/listinfo')
+def list_info():
+    cursor = mongo.db.info.find()
     file = ""
     for doc in cursor:
         file += str(doc)
@@ -80,4 +89,8 @@ def reset_db():
                 "admins": []
             },
         ])
+    add_to_users("guest", "test", "email@example.com", "gra", "żyna", "91487198")
+    create_group(sign_in("guest", "test"), "TESTGROUP", "PASS")
+    add_to_tasks(sign_in("guest", "test"), "TESTGROUP", "Title", "Description")
+
     return 'DB RESETED'
