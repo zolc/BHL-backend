@@ -4,7 +4,7 @@ from graphene import relay
 from . import app, mongo
 import jwt
 import sys
-from .logic import add_to_users, sign_in, self_info
+from .logic import add_to_users, sign_in, self_info, create_group
 
 
 class User(graphene.ObjectType):
@@ -114,10 +114,27 @@ class SelfInfo(graphene.Mutation):
         return SelfInfo(User=result)
 
 
+class CreateGroup(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        name = graphene.String()
+        password = graphene.String()
+
+    success = graphene.String()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        name = input.get('name')
+        password = input.get('password')
+        result = create_group(token, name, password)
+        return CreateGroup(success=result)
+
+
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
     SignIn = SignIn.Field()
     SelfInfo = SelfInfo.Field()
-
+    CreateGroup = CreateGroup.Field()
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

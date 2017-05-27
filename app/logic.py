@@ -56,3 +56,20 @@ def self_info(token):
         last_name=result['last_name'],
         phone=result['phone']
     )
+
+
+def create_group(token, name, password):
+    creator = self_info(token)
+    result = mongo.db.groups.find_one({'name': name})
+    print(result, file=sys.stderr)
+    if result is not None:
+        return False
+    record = {
+        "name": name,
+        "pass_hash": password,
+        "users": [],
+        "admins": [creator.username]
+    }
+    print('Adding {}'.format(record), file=sys.stderr)
+    mongo.db.groups.insert_one(record)
+    return True
