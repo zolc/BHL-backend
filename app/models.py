@@ -21,6 +21,7 @@ class User(graphene.ObjectType):
     phone = graphene.String()
     pass_hash = graphene.String()
     groups = graphene.List(lambda: Group)
+    last_online = graphene.String()
 
     def resolve_groups(self, args, context, info):
         groups = []

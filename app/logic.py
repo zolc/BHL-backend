@@ -28,13 +28,19 @@ def self_info(token):
     from .models import User
     decoded = jwt.decode(token, 'secret', algorithms=['HS256'])
     result = mongo.db.users.find_one({'username': str(decoded['username'])})
-    return User(
+    if result is None:
+        return None
+    #Read new tasks/infos before changing last_online
+    user = User(
         username=result['username'],
         email=result['email'],
         first_name=result['first_name'],
         last_name=result['last_name'],
-        phone=result['phone']
+        phone=result['phone'],
+        last_online=result['last_online'],
+        groups=result['groups']
     )
+    return user
 
 
 def create_group(token, group_name, password):
@@ -72,28 +78,12 @@ def add_to_users(username, password, email, first_name=None, last_name=None, pho
         "first_name": first_name,
         "last_name": last_name,
         "phone": phone,
-        "groups": []
+        "groups": [],
+        "last_online": datetime.now()
     }
     print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.users.insert_one(record)
     return True
-
-
-def self_info(token):
-    from .models import User
-    decoded = jwt.decode(token, 'secret', algorithms=['HS256'])
-    result = mongo.db.users.find_one({'username': str(decoded['username'])})
-    if result is not None:
-        return User(
-            username=result['username'],
-            email=result['email'],
-            first_name=result['first_name'],
-            last_name=result['last_name'],
-            phone=result['phone'],
-            groups=result['groups']
-        )
-    else:
-        return None
 
 
 def add_to_tasks(token, group_name, title, description=None, due_date=None):
