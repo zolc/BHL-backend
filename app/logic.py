@@ -32,6 +32,7 @@ def self_info(token):
         return None
     # Read new tasks/infos before changing last_online
     user = User(
+        _id=result['_id'],
         username=result['username'],
         email=result['email'],
         first_name=result['first_name'],
@@ -91,7 +92,7 @@ def add_to_tasks(token, group_name, title, description=None, due_date=None):
     if is_admin(user.username, group_name):
         group_id = mongo.db['groups'].find_one({"name": group_name})["_id"]
         record = {
-            "group_id": group_id,
+            "group_name": group_name,
             "title": title,
             "description": description,
             "published_date": datetime.now(),
@@ -104,6 +105,17 @@ def add_to_tasks(token, group_name, title, description=None, due_date=None):
         mongo.db['tasks'].insert_one(record)
         return True
     return False
+
+
+def toggle_task(token, task_id):
+    user = self_info(token)
+    task = mongo.db.tasks.find_one({'_id': task_id})
+    if user.username in task['users_completed']:
+        task['users_completed'].remove(user.username)
+        return True
+    task['users_completed'].append(user.username)
+    mongo.db.tasks.update_one({'_id': task}, {'$set': {'users_completed': task['users_completed']}})
+    return True
 
 
 def add_to_info(token, group_name, title, description=None):

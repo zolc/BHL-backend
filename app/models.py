@@ -6,14 +6,14 @@ import jwt
 import sys
 
 from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
-    register_to_group, remove_admin_from_group, remove_from_group, delete_group
+    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task
 
 
 class User(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
-    _id = graphene.ID()
+    _id = graphene.String()
     username = graphene.String()
     email = graphene.String()
     first_name = graphene.String()
@@ -22,23 +22,33 @@ class User(graphene.ObjectType):
     pass_hash = graphene.String()
     groups = graphene.List(lambda: Group)
     last_online = graphene.String()
+    tasks = graphene.List(lambda: Task)
 
     def resolve_groups(self, args, context, info):
         groups = []
-        group_id_list = mongo.db.users.find_one({"username": self.username})['groups']
-        for group_name in group_id_list:
-            result = mongo.db.groups.find_one({"name": group_name})
+        group_id_list = mongo.db.users.find_one({"_id": self._id})['groups']
+        for group_id in group_id_list:
+            result = mongo.db.groups.find_one({"_id": group_id})
             groups.append(result)
         if len(groups) != 0:
             return [Group(**kwargs) for kwargs in groups]
         return None
+
+    def resolve_tasks(self, args, context, info):
+        tasks = []
+        for group_id in self.groups:
+            print(group_id, file=sys.stderr)
+            tasks_from_group = mongo.db.tasks.find({'_id': group_id})
+            for task in tasks_from_group:
+                tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
 
 
 class Group(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
-    _id = graphene.ID()
+    _id = graphene.String()
     name = graphene.String()
     password = graphene.String()
     admins = graphene.List(lambda: User)
@@ -46,9 +56,9 @@ class Group(graphene.ObjectType):
 
     def resolve_users(self, args, context, info):
         users = []
-        user_id_list = mongo.db.groups.find_one({"name": self.name})['users']
-        for username in user_id_list:
-            result = mongo.db.users.find_one({"username": username})
+        user_id_list = mongo.db.groups.find_one({"_id": self._id})['users']
+        for user_id in user_id_list:
+            result = mongo.db.users.find_one({"_id": user_id})
             users.append(result)
         if len(users) != 0:
             return [User(**kwargs) for kwargs in users]
@@ -56,9 +66,9 @@ class Group(graphene.ObjectType):
 
     def resolve_admins(self, args, context, info):
         users = []
-        user_id_list = mongo.db.groups.find_one({"name": self.name})['admins']
-        for username in user_id_list:
-            result = mongo.db.users.find_one({"username": username})
+        user_id_list = mongo.db.groups.find_one({"_id": self._id})['admins']
+        for user_id in user_id_list:
+            result = mongo.db.users.find_one({"_id": user_id})
             users.append(result)
         if len(users) != 0:
             return [User(**kwargs) for kwargs in users]
@@ -69,10 +79,13 @@ class Task(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
-    _id = graphene.ID()
+    _id = graphene.String()
+    creator = graphene.String()
+    group_name = graphene.String()
+    users_completed = graphene.List(lambda: User)
+    users_important = graphene.List(lambda: User)
     title = graphene.String()
     description = graphene.String()
-    group = Group()
     published_date = graphene.String()
     due_date = graphene.String()
     done = graphene.Boolean()
@@ -83,7 +96,7 @@ class Info(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node,)
 
-    _id = graphene.ID()
+    _id = graphene.String()
     group = Group()
     title = graphene.String()
     description = graphene.String()
@@ -92,11 +105,11 @@ class Info(graphene.ObjectType):
 
 class Query(graphene.ObjectType):
     users = graphene.List(User,
-                          _id=graphene.ID(),
+                          _id=graphene.String(),
                           username=graphene.String()
                           )
     groups = graphene.List(Group,
-                           _id=graphene.ID(),
+                           _id=graphene.String(),
                            name=graphene.String(),
                            )
 
@@ -127,7 +140,7 @@ class SignUp(graphene.Mutation):
 class AddTask(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        group_id = graphene.String(required=True)
         title = graphene.String(required=True)
         description = graphene.String(required=False)
         due_date = graphene.String(required=False)
@@ -136,12 +149,12 @@ class AddTask(graphene.Mutation):
 
     @staticmethod
     def mutate(root, input, context, info):
-        group_name = input.get('group_name')
+        group_id = input.get('group_id')
         title = input.get('title')
         description = input.get('description')
         due_date = input.get('due_date')
         token = input.get('token')
-        result = add_to_tasks(token, group_name, title, description, due_date)
+        result = add_to_tasks(token, group_id, title, description, due_date)
         return AddTask(success=result)
 
 
@@ -196,7 +209,7 @@ class AddAdminToGroup(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
         username = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        group_id = graphene.String(required=True)
 
     success = graphene.Boolean()
 
@@ -204,32 +217,32 @@ class AddAdminToGroup(graphene.Mutation):
     def mutate(root, input, context, info):
         token = input.get('token')
         username = input.get('username')
-        group_name = input.get('group_name')
-        result = add_admin_to_group(token, username, group_name)
+        group_id = input.get('group_id')
+        result = add_admin_to_group(token, username, group_id)
         return AddAdminToGroup(success=result)
 
 
 class RemoveAdminFromGroup(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
-        username = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        user_id = graphene.String(required=True)
+        group_id = graphene.String(required=True)
 
     success = graphene.Boolean()
 
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
-        username = input.get('username')
-        group_name = input.get('group_name')
-        result = remove_admin_from_group(token, username, group_name)
+        user_id = input.get('user_id')
+        group_id = input.get('group_id')
+        result = remove_admin_from_group(token, user_id, group_id)
         return RemoveAdminFromGroup(success=result)
 
 
 class RegisterToGroup(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        group_id = graphene.String(required=True)
         password = graphene.String(required=True)
 
     success = graphene.String()
@@ -237,31 +250,31 @@ class RegisterToGroup(graphene.Mutation):
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
-        group_name = input.get('group_name')
+        group_id = input.get('group_id')
         password = input.get('password')
-        result = register_to_group(token, group_name, password)
+        result = register_to_group(token, group_id, password)
         return RegisterToGroup(success=result)
 
 
 class RemoveFromGroup(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        group_id = graphene.String(required=True)
 
     success = graphene.Boolean()
 
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
-        group_name = input.get('group_name')
-        result = remove_from_group(token, group_name)
+        group_id = input.get('group_id')
+        result = remove_from_group(token, group_id)
         return RemoveFromGroup(success=result)
 
 
 class AddInfo(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        group_id = graphene.String(required=True)
         title = graphene.String(required=True)
         description = graphene.String(required=False)
 
@@ -270,26 +283,41 @@ class AddInfo(graphene.Mutation):
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
-        group_name = input.get('group_name')
+        group_id = input.get('group_id')
         title = input.get('title')
         description = input.get('description')
-        result = add_to_info(token, group_name, title, description)
+        result = add_to_info(token, group_id, title, description)
         return AddTask(success=result)
 
 
 class DeleteGroup(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
-        group_name = graphene.String(required=True)
+        group_id = graphene.String(required=True)
 
     success = graphene.Boolean()
 
     @staticmethod
     def mutate(root, input, context, info):
         token = input.get('token')
-        group_name = input.get('group_name')
-        result = delete_group(token, group_name)
+        group_id = input.get('group_id')
+        result = delete_group(token, group_id)
         return DeleteGroup(success=result)
+
+
+class ToggleComplete(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        task_id = graphene.String()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        task_id = input.get('task_id')
+        result = toggle_task(token, task_id)
+        return ToggleComplete(success=result)
 
 
 class Mutation(graphene.ObjectType):
@@ -304,6 +332,7 @@ class Mutation(graphene.ObjectType):
     RemoveAdminFromGroup = RemoveAdminFromGroup.Field()
     RemoveFromGroup = RemoveFromGroup.Field()
     DeleteGroup = DeleteGroup.Field()
+    ToggleComplete = ToggleComplete.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)
