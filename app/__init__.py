@@ -11,6 +11,8 @@ app.config['MONGO_URI'] = 'mongodb://database/main_db'
 
 mongo = PyMongo(app)
 
+from app import views
+
 '''
 from app.models import schema
 
