@@ -3,7 +3,8 @@ from sys import stderr
 from graphene import relay
 from . import app, mongo
 import jwt
-from .logic import add_to_users
+import sys
+from .logic import add_to_users, sign_in, self_info
 
 
 class User(graphene.ObjectType):
@@ -11,7 +12,7 @@ class User(graphene.ObjectType):
         interfaces = (relay.Node,)
 
     _id = graphene.ID()
-    login = graphene.String()
+    username = graphene.String()
     email = graphene.String()
     first_name = graphene.String()
     last_name = graphene.String()
@@ -53,7 +54,7 @@ class Task:
 class Query(graphene.ObjectType):
     users = graphene.List(User,
                           _id=graphene.ID(),
-                          login=graphene.String()
+                          username=graphene.String()
                           )
     groups = graphene.List(Group,
                            _id=graphene.ID(),
@@ -63,7 +64,7 @@ class Query(graphene.ObjectType):
 
 class SignUp(graphene.Mutation):
     class Input:
-        login = graphene.String(required=True)
+        username = graphene.String(required=True)
         password = graphene.String(required=True)
         email = graphene.String(required=True)
         first_name = graphene.String(required=False)
@@ -74,18 +75,49 @@ class SignUp(graphene.Mutation):
 
     @staticmethod
     def mutate(root, input, context, info):
-        login = input.get('login')
+        username = input.get('username')
         password = input.get('password')
         email = input.get('email')
         first_name = input.get('first_name')
         last_name = input.get('last_name')
         phone = input.get('phone')
-        result = add_to_users(login, password, email, first_name, last_name, phone)
+        result = add_to_users(username, password, email, first_name, last_name, phone)
         return SignUp(success=result)
+
+
+class SignIn(graphene.Mutation):
+    class Input:
+        username = graphene.String()
+        password = graphene.String()
+
+    token = graphene.String()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        username = input.get('username')
+        password = input.get('password')
+        print(password, file=sys.stderr)
+        result = sign_in(username, password)
+        return SignIn(token=result)
+
+
+class SelfInfo(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+
+    User = graphene.Field(User)
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        result = self_info(token)
+        return SelfInfo(User=result)
 
 
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
+    SignIn = SignIn.Field()
+    SelfInfo = SelfInfo.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)
