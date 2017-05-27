@@ -6,7 +6,7 @@ import jwt
 import sys
 
 from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
-    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task
+    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task_completed, toggle_task_important
 
 
 class User(graphene.ObjectType):
