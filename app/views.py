@@ -80,13 +80,14 @@ def reset_db():
             {
                 "name": "group1",
                 "password": "pass1",
-                "groups": [],
+                "users": [],
                 "admins": []
+
             },
             {
                 "name": "group2",
                 "password": "a5hetbf",
-                "groups": [],
+                "users": [],
                 "admins": []
             },
         ])

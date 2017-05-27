@@ -10,7 +10,6 @@ import base64
 import jwt
 
 
-
 def sign_in(username, password):
     result = mongo.db.users.find_one({'username': username})
     print(result, file=sys.stderr)
@@ -49,6 +48,7 @@ def create_group(token, name, password):
         "password": password,
         "users": [],
         "admins": [creator.username]
+
     }
     print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.groups.insert_one(record)
@@ -69,7 +69,8 @@ def add_to_users(username, password, email, first_name=None, last_name=None, pho
         "email": email,
         "first_name": first_name,
         "last_name": last_name,
-        "phone": phone
+        "phone": phone,
+        "groups": []
     }
     print('Adding {}'.format(record), file=sys.stderr)
     mongo.db.users.insert_one(record)
@@ -100,11 +101,11 @@ def self_info(token):
             email=result['email'],
             first_name=result['first_name'],
             last_name=result['last_name'],
-            phone=result['phone']
+            phone=result['phone'],
+            groups=result['groups']
         )
     else:
         return None
-
 
 
 def add_to_tasks(token, group_name, title, description=None, due_date=None):
@@ -130,7 +131,7 @@ def add_to_tasks(token, group_name, title, description=None, due_date=None):
 def add_to_info(token, group_name, title, description=None):
     user = self_info(token)
     if is_admin(user.username, group_name):
-        group_id = mongo.db['groups'].find_one({"name":group_name})["_id"]
+        group_id = mongo.db['groups'].find_one({"name": group_name})["_id"]
         record = {
             "group_id": group_id,
             "title": title,
@@ -158,21 +159,38 @@ def add_admin_to_group(token, username, group_name):
     if is_admin(user.username, group_name):
         group_admins = mongo.db['groups'].find_one({"name": group_name})["admins"]
         group_admins.append(username)
-        mongo.db.groups.update_one({'name': group_name}, {'admins': group_admins})
+        mongo.db.groups.update_one({'name': group_name}, {'$set': {'admins': group_admins}})
         return True
     return False
 
 
+def remove_admin_from_group(token, username, group_name):
+    user = self_info(token)
+    if is_admin(user.username, group_name) is False:
+        return False
+    group_admins = mongo.db['groups'].find_one({"name": group_name})["admins"]
+    if username not in group_admins:
+        return False
+    group_admins.remove(username)
+    mongo.db.groups.update_one({'name': group_name}, {'$set': {'admins': group_admins}})
+    return True
+
+
 def register_to_group(token, group_name, password):
     user = self_info(token)
+
     if user is None:
+        print("user is none", file=sys.stderr)
         return False
     result = mongo.db.groups.find_one({'name': group_name})
-    if result is None or password != result.password:
+    if result is None or password != result['password']:
+        print("Group is none / wrong password", file=sys.stderr)
         return False
-    users = result.users
+    users = result['users']
     if users is None or user.username in users:
         return False
+    user.groups.append(group_name)
     users.append(user.username)
-    mongo.db.groups.update_one({'name': group_name}, {'users': users})
+    mongo.db.groups.update_one({'name': group_name}, {'$set': {'users': users}})
+    mongo.db.users.update_one({'username': user.username}, {'$set': {'groups': user.groups}})
     return True
