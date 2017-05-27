@@ -37,8 +37,7 @@ class User(graphene.ObjectType):
     def resolve_tasks(self, args, context, info):
         tasks = []
         for group_id in self.groups:
-            print(group_id, file=sys.stderr)
-            tasks_from_group = mongo.db.tasks.find({'_id': group_id})
+            tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
             for task in tasks_from_group:
                 tasks.append(task)
         return [Task(**kwargs) for kwargs in tasks]
@@ -81,7 +80,7 @@ class Task(graphene.ObjectType):
 
     _id = graphene.String()
     creator = graphene.String()
-    group_name = graphene.String()
+    group_id = graphene.String()
     users_completed = graphene.List(lambda: User)
     users_important = graphene.List(lambda: User)
     title = graphene.String()
