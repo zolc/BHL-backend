@@ -6,7 +6,7 @@ import jwt
 import sys
 
 from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
-    register_to_group, remove_admin_from_group
+    register_to_group, remove_admin_from_group, remove_from_group
 
 
 class User(graphene.ObjectType):
@@ -41,7 +41,7 @@ class Group(graphene.ObjectType):
     _id = graphene.ID()
     name = graphene.String()
     password = graphene.String()
-    admins = graphene.List(lambda : User)
+    admins = graphene.List(lambda: User)
     users = graphene.List(lambda: User)
 
     def resolve_users(self, args, context, info):
@@ -243,6 +243,21 @@ class RegisterToGroup(graphene.Mutation):
         return RegisterToGroup(success=result)
 
 
+class RemoveFromGroup(graphene.Mutation):
+    class Input:
+        token = graphene.String(required=True)
+        group_name = graphene.String(required=True)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        group_name = input.get('group_name')
+        result = remove_from_group(token, group_name)
+        return RemoveFromGroup(success=result)
+
+
 class AddInfo(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
@@ -272,6 +287,6 @@ class Mutation(graphene.ObjectType):
     RegisterToGroup = RegisterToGroup.Field()
     AddAdminToGroup = AddAdminToGroup.Field()
     RemoveAdminFromGroup = RemoveAdminFromGroup.Field()
-
+    RemoveFromGroup = RemoveFromGroup.Field()
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)

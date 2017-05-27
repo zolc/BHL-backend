@@ -172,3 +172,32 @@ def register_to_group(token, group_name, password):
     mongo.db.groups.update_one({'name': group_name}, {'$set': {'users': users}})
     mongo.db.users.update_one({'username': user.username}, {'$set': {'groups': user.groups}})
     return True
+
+
+def remove_from_group(token,group_name):
+    user = self_info(token)
+    if user is None:
+        return False
+    result = mongo.db.groups.find_one({'name': group_name})
+    if result is None:
+        return False
+    admins_list=result['admins']
+    users_list = result['users']
+    if user.username in admins_list:
+        if len(admins_list)<2:
+            return False
+        admins_list.remove(user.username)
+        if group_name in user.groups:
+            user.groups.remove(group_name)
+        mongo.db.groups.update_one({'name': group_name}, {'$set': {'admins': admins_list}})
+        mongo.db.users.update_one({'username': user.username}, {'$set': {'groups': user.groups}})
+        return True
+    if user.username in users_list:
+        users_list.remove(user.username)
+        if group_name in user.groups:
+            user.groups.remove(group_name)
+        mongo.db.groups.update_one({'name': group_name}, {'$set': {'admins': admins_list}})
+        mongo.db.users.update_one({'username': user.username}, {'$set': {'groups': user.groups}})
+        return True
+
+
