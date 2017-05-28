@@ -62,13 +62,11 @@ class User(graphene.ObjectType):
                     task['highlighted'] = True
                 else:
                     task['highlighted'] = False
-                print(task['users_completed'], file=sys.stderr)
                 if self._id in task['users_completed']:
                     task['done'] = True
                 else:
                     task['done'] = False
                 tasks.append(task)
-                print(task, file=sys.stderr)
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_info(self, args, context, info):
