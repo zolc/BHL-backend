@@ -214,9 +214,9 @@ class Query(graphene.ObjectType):
                           _id=graphene.String(),
                           username=graphene.String()
                           )
-    group = graphene.Field(Group,
-                           _id=graphene.String(required=True),
-                           token=graphene.String(required=True)
+    group = graphene.List(Group,
+                           token=graphene.String(required=True),
+                          _id=graphene.String(required=False)
                            )
     tasks = graphene.List(Task,
                             token=graphene.String(required=True),
@@ -226,10 +226,21 @@ class Query(graphene.ObjectType):
                            )
 
     def resolve_group(self, args, context, info):
-        group = mongo.db.groups.find_one({'_id': ObjectId(args['_id'])})
         user = self_info(args['token'])
-        group['current_user_id'] = user._id
-        return Group(**group)
+        group_list=[]
+        if args.get('_id', None) is not None:
+            group = mongo.db.groups.find_one({'_id': ObjectId(args['_id'])})
+            group['current_user_id'] = user._id
+            group_list.append(group)
+        else:
+            user_from_db = mongo.db['users'].find_one({"_id":ObjectId(user._id)})
+            user_groups = user_from_db['groups']
+            for group_id in user_groups:
+                group = mongo.db.groups.find_one({'_id': ObjectId(group_id)})
+                group['current_user_id'] = user._id
+                group_list.append(group)
+
+        return [Group(**group) for group in group_list]
 
     def resolve_tasks(self, args, context, info):
         user = self_info(args['token'])
