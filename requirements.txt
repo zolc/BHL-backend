@@ -4,3 +4,4 @@ graphene
 requests
 flask_graphql
 PyJWT
+twilio

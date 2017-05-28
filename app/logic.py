@@ -2,12 +2,14 @@ import sys
 from datetime import datetime
 from flask_pymongo import PyMongo
 from app import app, mongo
+import os
 from pprint import pprint
 from flask import Response
 import requests
 import hashlib
 import base64
 import jwt
+from twilio.rest import Client
 import smtplib
 from bson.objectid import ObjectId
 
@@ -270,10 +272,9 @@ def send_mail_notification(token, task_id):
     if user is None or user.email is None:
         return False
     task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
-    import os
-    APP_ROOT = os.path.dirname(os.path.abspath(__file__))  # refers to application_top
     if task is None:
         return False
+    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
     login_file = open(os.path.join(APP_ROOT, 'logindata.txt'))
     line = login_file.readline()
     gmail_user = ""
@@ -284,13 +285,38 @@ def send_mail_notification(token, task_id):
         gmail_pwd = sout[1]
         line = login_file.readline()
     to = user.email
-    smtpserver = smtplib.SMTP("smtp.gmail.com", 587)
-    smtpserver.ehlo()
-    smtpserver.starttls()
-    smtpserver.ehlo()
-    smtpserver.login(gmail_user, gmail_pwd)
+    smtp_server = smtplib.SMTP("smtp.gmail.com", 587)
+    smtp_server.ehlo()
+    smtp_server.starttls()
+    smtp_server.ehlo()
+    smtp_server.login(gmail_user, gmail_pwd)
     header = 'To:' + to + '\n' + 'From: ' + gmail_user + '\n' + 'Subject:' + task['title'] + '\n'
     msg = header + '\n You have x time remaining for task:' + task['title'] + ' \n\n'
-    smtpserver.sendmail(gmail_user, to, msg)
-    smtpserver.quit()
+    smtp_server.sendmail(gmail_user, to, msg)
+    smtp_server.quit()
+    return True
+
+
+def text_message(token, task_id):
+    user = self_info(token)
+    if user is None or user.email is None:
+        return False
+
+    task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
+    if task is None:
+        return False
+    APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+    login_file = open(os.path.join(APP_ROOT, 'twilioauth.txt'))
+    line = login_file.readline()
+    while line:
+        sout = line.split(':')
+        accountSid = sout[0]
+        authToken = sout[1]
+        line = login_file.readline()
+    twilioClient = Client(accountSid, authToken)
+    myTwilioNumber = "+48732230784"
+    destCellPhone = "+48796176303" #hardcoded because of limited options in trial version of twilio
+    msgIs = 'Remember about: ' + task['title']
+    twilioClient.messages.create(
+        body=msgIs, from_=myTwilioNumber, to=destCellPhone)
     return True

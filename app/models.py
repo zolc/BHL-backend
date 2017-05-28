@@ -20,7 +20,8 @@ from .logic import (
     toggle_task_completed,
     toggle_task_important,
     change_settings,
-    send_mail_notification)
+    send_mail_notification,
+    text_message)
 
 
 class User(graphene.ObjectType):
@@ -452,6 +453,22 @@ class SendMail(graphene.Mutation):
         return SendMail(success=result)
 
 
+# Only for debugging
+class TextMessage(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        task_id = graphene.String()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        task_id = input.get('task_id')
+        result = text_message(token, task_id)
+        return TextMessage(success=result)
+
+
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
     AddTask = AddTask.Field()
@@ -468,6 +485,7 @@ class Mutation(graphene.ObjectType):
     ToggleImportant = ToggleImportant.Field()
     ChangeSettings = ChangeSettings.Field()
     SendMail = SendMail.Field()
+    TextMessage = TextMessage.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)
