@@ -113,7 +113,6 @@ class Group(graphene.ObjectType):
         return None
 
     def resolve_completed_tasks(self, args, context, info):
-        print(self.current_user_id, file=sys.stderr)
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
         for task in tasks_from_group:
@@ -128,7 +127,6 @@ class Group(graphene.ObjectType):
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_uncompleted_tasks(self, args, context, info):
-        print(self.current_user_id, file=sys.stderr)
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
         for task in tasks_from_group:
@@ -258,7 +256,7 @@ class AddTask(graphene.Mutation):
         description = input.get('description')
         due_date = input.get('due_date')
         token = input.get('token')
-        result = add_to_tasks(token, group_id, title, description, due_date)
+        result = add_to_tasks(token, group_id, title, due_date,description)
         return AddTask(success=result)
 
 
@@ -274,7 +272,6 @@ class SignIn(graphene.Mutation):
     def mutate(root, input, context, info):
         username = input.get('username')
         password = input.get('password')
-        print(password, file=sys.stderr)
         (success, token) = sign_in(username, password)
         return SignIn(success=success, token=token)
 
