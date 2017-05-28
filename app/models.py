@@ -19,8 +19,8 @@ from .logic import (
     remove_admin_from_group,
     remove_from_group,
     delete_group,
-    toggle_task_completed,
-    toggle_task_important,
+    toggle_done,
+    toggle_highlighted,
     change_settings,
     send_mail_notification,
     text_message)
@@ -60,11 +60,11 @@ class User(graphene.ObjectType):
             tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
             for task in tasks_from_group:
                 task['current_user_id'] = self._id
-                if self._id in task['users_important']:
+                if self._id in task['users_highlighted']:
                     task['highlighted'] = True
                 else:
                     task['highlighted'] = False
-                if self._id in task['users_completed']:
+                if self._id in task['users_done']:
                     task['done'] = True
                 else:
                     task['done'] = False
@@ -120,11 +120,11 @@ class Group(graphene.ObjectType):
         tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
         for task in tasks_from_group:
             task['current_user_id'] = self._id
-            if self._id in task['users_important']:
+            if self._id in task['users_highlighted']:
                 task['highlighted'] = True
             else:
                 task['highlighted'] = False
-            if self._id in task['users_completed']:
+            if self._id in task['users_done']:
                 task['done'] = True
             else:
                 task['done'] = False
@@ -136,11 +136,11 @@ class Group(graphene.ObjectType):
         tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
         for task in tasks_from_group:
             task['current_user_id'] = self.current_user_id
-            if self.current_user_id in task['users_important']:
+            if self.current_user_id in task['users_highlighted']:
                 task['highlighted'] = True
             else:
                 task['highlighted'] = False
-            if self.current_user_id in task['users_completed']:
+            if self.current_user_id in task['users_done']:
                 task['done'] = True
                 tasks.append(task)
             else:
@@ -152,11 +152,11 @@ class Group(graphene.ObjectType):
         tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
         for task in tasks_from_group:
             task['current_user_id'] = self.current_user_id
-            if self.current_user_id in task['users_important']:
+            if self.current_user_id in task['users_highlighted']:
                 task['highlighted'] = True
             else:
                 task['highlighted'] = False
-            if self.current_user_id not in task['users_completed']:
+            if self.current_user_id not in task['users_done']:
                 task['done'] = False
                 tasks.append(task)
             else:
@@ -179,8 +179,8 @@ class Task(graphene.ObjectType):
     _id = graphene.String()
     creator = graphene.String()
     group_id = graphene.String()
-    users_completed = graphene.List(lambda: User)
-    users_important = graphene.List(lambda: User)
+    users_done = graphene.List(lambda: User)
+    users_highlighted = graphene.List(lambda: User)
     title = graphene.String()
     description = graphene.String()
     published_date = graphene.String()
@@ -260,11 +260,11 @@ class Query(graphene.ObjectType):
             for group_id in user_groups:
                 task_result = mongo.db['tasks'].find({"group_id":ObjectId(group_id)})
                 for task in task_result:
-                    if user._id in task['users_important']:
+                    if user._id in task['users_highlighted']:
                         task['highlighted'] = True
                     else:
                         task['highlighted'] = False
-                    if user._id in task['users_completed']:
+                    if user._id in task['users_done']:
                         task['done'] = True
                     else:
                         task['done'] = False
@@ -498,7 +498,7 @@ class DeleteGroup(graphene.Mutation):
         return DeleteGroup(success=result)
 
 
-class ToggleComplete(graphene.Mutation):
+class ToggleDone(graphene.Mutation):
     class Input:
         token = graphene.String()
         task_id = graphene.String()
@@ -509,11 +509,11 @@ class ToggleComplete(graphene.Mutation):
     def mutate(root, input, context, info):
         token = input.get('token')
         task_id = input.get('task_id')
-        result = toggle_task_completed(token, task_id)
-        return ToggleComplete(success=result)
+        result = toggle_done(token, task_id)
+        return ToggleDone(success=result)
 
 
-class ToggleImportant(graphene.Mutation):
+class ToggleHighlighted(graphene.Mutation):
     class Input:
         token = graphene.String()
         task_id = graphene.String()
@@ -524,8 +524,8 @@ class ToggleImportant(graphene.Mutation):
     def mutate(root, input, context, info):
         token = input.get('token')
         task_id = input.get('task_id')
-        result = toggle_task_important(token, task_id)
-        return ToggleImportant(success=result)
+        result = toggle_highlighted(token, task_id)
+        return ToggleHighlighted(success=result)
 
 
 # Only for debugging
@@ -572,8 +572,8 @@ class Mutation(graphene.ObjectType):
     RemoveAdminFromGroup = RemoveAdminFromGroup.Field()
     RemoveFromGroup = RemoveFromGroup.Field()
     DeleteGroup = DeleteGroup.Field()
-    ToggleComplete = ToggleComplete.Field()
-    ToggleImportant = ToggleImportant.Field()
+    ToggleDone = ToggleDone.Field()
+    ToggleHighlighted = ToggleHighlighted.Field()
     ChangeSettings = ChangeSettings.Field()
     SendMail = SendMail.Field()
     TextMessage = TextMessage.Field()

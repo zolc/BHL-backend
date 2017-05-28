@@ -123,8 +123,8 @@ def add_to_tasks(token, group_id, title, due_date, description):
             "description": description,
             "published_date": datetime.now(),
             "due_date": due_date,
-            "users_completed": [],
-            "users_important": [],
+            "users_done": [],
+            "users_highlighted": [],
             "creator": user.username
         }
         task_id = mongo.db['tasks'].insert_one(record).inserted_id
@@ -140,29 +140,29 @@ def plan_event(task_id, user_id):
     return True
 
 
-def toggle_task_completed(token, task_id):
+def toggle_done(token, task_id):
     user = self_info(token)
     user_id = mongo.db.users.find_one({'username': user.username})['_id']
     task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
-    if user_id in task['users_completed']:
-        task['users_completed'].remove(user_id)
-        mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_completed': task['users_completed']}})
+    if user_id in task['users_done']:
+        task['users_done'].remove(user_id)
+        mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_done': task['users_done']}})
         return True
-    task['users_completed'].append(user_id)
-    mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_completed': task['users_completed']}})
+    task['users_done'].append(user_id)
+    mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_done': task['users_done']}})
     return True
 
 
-def toggle_task_important(token, task_id):
+def toggle_highlighted(token, task_id):
     user = self_info(token)
     user_id = mongo.db.users.find_one({'username': user.username})['_id']
     task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
-    if user_id in task['users_important']:
-        task['users_important'].remove(user_id)
-        mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_important': task['users_important']}})
+    if user_id in task['users_highlighted']:
+        task['users_highlighted'].remove(user_id)
+        mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_highlighted': task['users_highlighted']}})
         return True
-    task['users_important'].append(user_id)
-    mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_important': task['users_important']}})
+    task['users_highlighted'].append(user_id)
+    mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_highlighted': task['users_highlighted']}})
     return True
 
 
