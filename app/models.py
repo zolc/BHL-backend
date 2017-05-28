@@ -56,17 +56,19 @@ class User(graphene.ObjectType):
         tasks = []
         for group_id in self.groups:
             tasks_from_group = mongo.db.tasks.find({'group_id': group_id})
-        for task in tasks_from_group:
-            task['current_user_id'] = self._id
-            if self._id in task['users_important']:
-                task['highlighted'] = True
-            else:
-                task['highlighted'] = False
-            if self._id in task['users_completed']:
-                task['done'] = True
-            else:
-                task['done'] = False
-            tasks.append(task)
+            for task in tasks_from_group:
+                task['current_user_id'] = self._id
+                if self._id in task['users_important']:
+                    task['highlighted'] = True
+                else:
+                    task['highlighted'] = False
+                print(task['users_completed'], file=sys.stderr)
+                if self._id in task['users_completed']:
+                    task['done'] = True
+                else:
+                    task['done'] = False
+                tasks.append(task)
+                print(task, file=sys.stderr)
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_info(self, args, context, info):

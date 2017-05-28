@@ -113,6 +113,9 @@ def change_settings(token, email, phone, password):
 def add_to_tasks(token, group_id, title, description=None, due_date=None):
     user = self_info(token)
     if is_admin(user.username, group_id):
+        # date = datetime.now()
+        # datetime_object = datetime.strptime(str(date),'%Y-%b-%d %Y %I:%M%p')
+        # print(datetime_object, file=sys.stderr)
         record = {
             "group_id": group_id,
             "title": title,
@@ -130,22 +133,26 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
 
 def toggle_task_completed(token, task_id):
     user = self_info(token)
+    user_id = mongo.db.users.find_one({'username': user.username})['_id']
     task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
-    if user.username in task['users_completed']:
-        task['users_completed'].remove(user.username)
+    if user_id in task['users_completed']:
+        task['users_completed'].remove(user_id)
+        mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_completed': task['users_completed']}})
         return True
-    task['users_completed'].append(user.username)
+    task['users_completed'].append(user_id)
     mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_completed': task['users_completed']}})
     return True
 
 
 def toggle_task_important(token, task_id):
     user = self_info(token)
+    user_id = mongo.db.users.find_one({'username': user.username})['_id']
     task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
-    if user.username in task['users_completed']:
-        task['users_important'].remove(user.username)
+    if user_id in task['users_important']:
+        task['users_important'].remove(user_id)
+        mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_important': task['users_important']}})
         return True
-    task['users_important'].append(user.username)
+    task['users_important'].append(user_id)
     mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_important': task['users_important']}})
     return True
 
@@ -315,7 +322,7 @@ def text_message(token, task_id):
         line = login_file.readline()
     twilioClient = Client(accountSid, authToken)
     myTwilioNumber = "+48732230784"
-    destCellPhone = "+48796176303" #hardcoded because of limited options in trial version of twilio
+    destCellPhone = "+48796176303"  # hardcoded because of limited options in trial version of twilio
     msgIs = 'Remember about: ' + task['title']
     twilioClient.messages.create(
         body=msgIs, from_=myTwilioNumber, to=destCellPhone)
