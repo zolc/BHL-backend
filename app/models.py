@@ -5,6 +5,7 @@ from . import app, mongo
 import jwt
 import sys
 from bson.objectid import ObjectId
+from operator import itemgetter
 
 from .logic import (
     add_to_users,
@@ -124,7 +125,9 @@ class Group(graphene.ObjectType):
                 task['highlighted'] = False
             if self.current_user_id in task['users_completed']:
                 task['done'] = True
-                tasks.append(task)
+            else:
+                task['done'] = False
+            tasks.append(task)
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_uncompleted_tasks(self, args, context, info):
@@ -138,7 +141,9 @@ class Group(graphene.ObjectType):
                 task['highlighted'] = False
             if self.current_user_id not in task['users_completed']:
                 task['done'] = True
-                tasks.append(task)
+            else:
+                task['done'] = False
+            tasks.append(task)
 
         return [Task(**kwargs) for kwargs in tasks]
 
@@ -196,13 +201,45 @@ class Query(graphene.ObjectType):
                            _id=graphene.String(required=True),
                            token=graphene.String(required=True)
                            )
-
+    tasks = graphene.List(Task,
+                            token=graphene.String(required=True),
+                           _id=graphene.String(required=False),
+                           latest=graphene.Int(required=False)
+                           )
     def resolve_group(self, args, context, info):
         group = mongo.db.groups.find_one({'_id': ObjectId(args['_id'])})
         user = self_info(args['token'])
         group['current_user_id'] = user._id
         return Group(**group)
 
+    def resolve_tasks(self, args, context, info):
+        user = self_info(args['token'])
+        task_list = []
+        if args.get('_id', None) is not None:
+            one_task = mongo.db['tasks'].find_one({"_id":ObjectId(args['_id'])})
+            one_task['current_user_id'] = user._id
+            task_list.append(one_task)
+        else:
+            user_from_db = mongo.db['users'].find_one({"_id":ObjectId(user._id)})
+            user_groups = user_from_db['groups']
+            for group_id in user_groups:
+                task_result = mongo.db['tasks'].find({"group_id":ObjectId(group_id)})
+                for task in task_result:
+                    if user._id in task['users_important']:
+                        task['highlighted'] = True
+                    else:
+                        task['highlighted'] = False
+                    if user._id in task['users_completed']:
+                        task['done'] = True
+                    else:
+                        task['done'] = False
+                    task['current_user_id'] = user._id
+                    task_list.append(task)
+            if args.get('latest', None) is not None:
+                sorted_list = sorted(task_list, key=itemgetter('published_date'), reverse=True)
+                task_list = sorted_list[:args['latest']]
+
+        return [Task(**task) for task in task_list]
 
 class ChangeSettings(graphene.Mutation):
     class Input:
