@@ -214,7 +214,7 @@ class Query(graphene.ObjectType):
                           _id=graphene.String(),
                           username=graphene.String()
                           )
-    group = graphene.List(Group,
+    groups = graphene.List(Group,
                            token=graphene.String(required=True),
                           _id=graphene.String(required=False)
                            )
@@ -225,7 +225,7 @@ class Query(graphene.ObjectType):
                            done=graphene.Boolean(required=False)
                            )
 
-    def resolve_group(self, args, context, info):
+    def resolve_groups(self, args, context, info):
         user = self_info(args['token'])
         group_list=[]
         if args.get('_id', None) is not None:
