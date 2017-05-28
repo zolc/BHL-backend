@@ -56,24 +56,24 @@ def list_info():
 def reset_db():
     for collection in mongo.db.collection_names():
         mongo.db[collection].drop()
-    add_to_users("guest", "test", "przemek.proszewski@gmail.com", "gra", "żyna", "91487198")
-    add_to_users("admin", "pass", "test@mini.pw.edu.pl", "Jan", "Brodka", "602100100")
-    add_to_users("student", "owip", "tester@mini.pl")
-    add_to_users("qwerty", "uiop", "mail2@mail.com")
+    add_to_users("guest", "test", "przemek.proszewski@gmail.com", "Jan", "Kowalski", "914871918")
+    add_to_users("admin", "pass", "test@example.com", "Pan", "Profesor", "602100100")
+    add_to_users("student1", "student1", "student@example.com")
+    add_to_users("student2", "student2", "student2@example.com")
     _, token = sign_in("guest", "test")
     _, token2 = sign_in("admin", "pass")
-    create_group(token, "ASD 2 D4", "mini-d1234")
-    create_group(token2, "SOP 2", "niktniezda")
-    _id = mongo.db.groups.find_one({"name": "ASD 2 D4"})["_id"]
-    _id2 = mongo.db.groups.find_one({"name": "SOP 2"})["_id"]
+    create_group(token, "ASD2", "mini-d1234")
+    create_group(token2, "SOP", "niktniezda")
+    _id = mongo.db.groups.find_one({"name": "ASD2"})["_id"]
+    _id2 = mongo.db.groups.find_one({"name": "SOP"})["_id"]
     register_to_group(token, _id2, "niktniezda")
-    add_to_tasks(token, _id, "Przygotowanie do kolokwium ASD2","May 28 2017 12:00:00", "Zakres: wykłady 1 - 10")
-    add_to_tasks(token, _id, "Część domowa z LAB 12", "May 28 2017 12:00:00","Rozwiązania proszę wysłać na maila asd@mini.pw.edu.pl")
-    add_to_tasks(token, _id, "Egzamin","May 28 2017 12:00:00", "Łatwy nie będzie")
+    add_to_tasks(token, _id, "Przygotowanie do kolokwium ASD2","May 28 2017 13:10:00", "Zakres: wykłady 1 - 10")
+    add_to_tasks(token, _id, "Część domowa z LAB 12", "May 28 2017 13:15:00","Rozwiązania proszę wysłać na maila asd@mini.pw.edu.pl")
+    add_to_tasks(token, _id, "Egzamin","May 28 2017 13:20:00", "Łatwy nie będzie")
     add_to_info(token, _id, "Zakres materiału na LAB13", "Description")
     add_to_info(token, _id, "Osoby nie posiadające 50 punktów mogą zaliczyć egzamin po spełnieniu dodatkowych warunków.", "Należy przygotować własną implementację algorytmu Hoare'a")
-    add_to_tasks(token2, _id2, "Poprawa laboratoriów 3 i 4","May 28 2017 12:00:00", "Poprawa odbędzie się jutro o godzinie 14:00 w sali 218")
-    add_to_tasks(token2, _id2, "Wyniki z laboratorium 2","May 28 2017 12:00:00","Wyniki dostępne na mojej stronie")
+    add_to_tasks(token2, _id2, "Poprawa laboratoriów 3 i 4","May 28 2017 15:00:00", "Poprawa odbędzie się jutro o godzinie 14:00 w sali 218")
+    add_to_tasks(token2, _id2, "Wyniki z laboratorium 2","May 28 2017 15:00:00","Wyniki dostępne na mojej stronie")
     # add_to_tasks(token2, _id2, "test", "sdad")
     # add_to_info(token, _id, "Title", "Description")
     return 'DB RESETED'
