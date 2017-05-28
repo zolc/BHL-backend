@@ -67,7 +67,11 @@ def reset_db():
     _id = mongo.db.groups.find_one({"name": "ASD 2 D4"})["_id"]
     _id2 = mongo.db.groups.find_one({"name": "SOP 2"})["_id"]
     register_to_group(token, _id2, "niktniezda")
-    add_to_tasks(token, _id, "Title", "Description")
-    add_to_tasks(token2, _id2, "test", "sdad")
-    add_to_info(token, _id, "Title", "Description")
+    add_to_tasks(token2, _id2, "Przygotowanie do kolokwium ASD2", "Zakres: wykłady 1 - 10")
+    add_to_tasks(token2, _id2, "Część domowa z LAB 12", "Rozwiązania proszę wysłać na maila asd@mini.pw.edu.pl","May 28 2017 12:00:00")
+    add_to_tasks(token2, _id2, "Egzamin ", "Łatwy nie będzie", "May 28 2017 12:00:00")
+    add_to_info(token2, _id2, "Zakres materiału na LAB13", "Description")
+    add_to_info(token2, _id2, "Osoby nie posiadające 50 punktów mogą zaliczyć egzamin po spełnieniu dodatkowych warunków.", "Należy przygotować własną implementację algorytmu Hoare'a")
+    # add_to_tasks(token2, _id2, "test", "sdad")
+    # add_to_info(token, _id, "Title", "Description")
     return 'DB RESETED'
