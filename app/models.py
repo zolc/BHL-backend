@@ -116,7 +116,7 @@ class Group(graphene.ObjectType):
 
     def resolve_completed_tasks(self, args, context, info):
         tasks = []
-        tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
+        tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
         for task in tasks_from_group:
             task['current_user_id'] = self.current_user_id
             if self.current_user_id in task['users_important']:
@@ -125,14 +125,14 @@ class Group(graphene.ObjectType):
                 task['highlighted'] = False
             if self.current_user_id in task['users_completed']:
                 task['done'] = True
+                tasks.append(task)
             else:
                 task['done'] = False
-            tasks.append(task)
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_uncompleted_tasks(self, args, context, info):
         tasks = []
-        tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
+        tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
         for task in tasks_from_group:
             task['current_user_id'] = self.current_user_id
             if self.current_user_id in task['users_important']:
@@ -140,10 +140,10 @@ class Group(graphene.ObjectType):
             else:
                 task['highlighted'] = False
             if self.current_user_id not in task['users_completed']:
-                task['done'] = True
-            else:
                 task['done'] = False
-            tasks.append(task)
+                tasks.append(task)
+            else:
+                task['done'] = True
 
         return [Task(**kwargs) for kwargs in tasks]
 
