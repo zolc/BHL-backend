@@ -210,9 +210,8 @@ class Info(graphene.ObjectType):
 
 
 class Query(graphene.ObjectType):
-    users = graphene.List(User,
-                          _id=graphene.String(),
-                          username=graphene.String()
+    user = graphene.Field(User,
+                          token=graphene.String(required=True)
                           )
     groups = graphene.List(Group,
                            token=graphene.String(required=True),
@@ -224,6 +223,10 @@ class Query(graphene.ObjectType):
                            latest=graphene.Int(required=False),
                            done=graphene.Boolean(required=False)
                            )
+
+    def resolve_user(self, args, context, info):
+        user = self_info(args['token'])
+        return user
 
     def resolve_groups(self, args, context, info):
         user = self_info(args['token'])
@@ -357,7 +360,8 @@ class SignIn(graphene.Mutation):
         (success, token) = sign_in(username, password)
         return SignIn(success=success, token=token)
 
-
+### OBSOLETE ###
+'''
 class SelfInfo(graphene.Mutation):
     class Input:
         token = graphene.String(required=True)
@@ -369,7 +373,7 @@ class SelfInfo(graphene.Mutation):
         token = input.get('token')
         result = self_info(token)
         return SelfInfo(user=result)
-
+'''
 
 class CreateGroup(graphene.Mutation):
     class Input:
@@ -555,7 +559,7 @@ class Mutation(graphene.ObjectType):
     AddTask = AddTask.Field()
     AddInfo = AddInfo.Field()
     SignIn = SignIn.Field()
-    SelfInfo = SelfInfo.Field()
+    #SelfInfo = SelfInfo.Field()
     CreateGroup = CreateGroup.Field()
     RegisterToGroup = RegisterToGroup.Field()
     AddAdminToGroup = AddAdminToGroup.Field()
