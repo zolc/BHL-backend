@@ -4,6 +4,7 @@ from graphene import relay
 from . import app, mongo
 import jwt
 import sys
+from bson.objectid import ObjectId
 
 from .logic import (
     add_to_users,
@@ -191,10 +192,16 @@ class Query(graphene.ObjectType):
                           _id=graphene.String(),
                           username=graphene.String()
                           )
-    groups = graphene.List(Group,
-                           _id=graphene.String(),
-                           name=graphene.String(),
+    group = graphene.Field(Group,
+                           _id=graphene.String(required=True),
+                           token=graphene.String(required=True)
                            )
+
+    def resolve_group(self, args, context, info):
+        group = mongo.db.groups.find_one({'_id': ObjectId(args['_id'])})
+        user = self_info(args['token'])
+        group['current_user_id'] = user._id
+        return Group(**group)
 
 
 class ChangeSettings(graphene.Mutation):
