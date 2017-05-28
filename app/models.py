@@ -89,6 +89,7 @@ class Group(graphene.ObjectType):
     password = graphene.String()
     admins = graphene.List(lambda: User)
     users = graphene.List(lambda: User)
+    tasks = graphene.List(lambda: Task)
     completed_tasks = graphene.List(lambda: Task)
     uncompleted_tasks = graphene.List(lambda: Task)
     info = graphene.List(lambda: Info)
@@ -113,6 +114,22 @@ class Group(graphene.ObjectType):
         if len(users) != 0:
             return [User(**kwargs) for kwargs in users]
         return None
+
+    def resolve_tasks(self, args, context, info):
+        tasks = []
+        tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
+        for task in tasks_from_group:
+            task['current_user_id'] = self._id
+            if self._id in task['users_important']:
+                task['highlighted'] = True
+            else:
+                task['highlighted'] = False
+            if self._id in task['users_completed']:
+                task['done'] = True
+            else:
+                task['done'] = False
+            tasks.append(task)
+        return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_completed_tasks(self, args, context, info):
         tasks = []
