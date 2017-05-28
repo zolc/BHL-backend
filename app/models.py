@@ -221,7 +221,8 @@ class Query(graphene.ObjectType):
                             token=graphene.String(required=True),
                            _id=graphene.String(required=False),
                            latest=graphene.Int(required=False),
-                           done=graphene.Boolean(required=False)
+                           done=graphene.Boolean(required=False),
+                           highlighted=graphene.Boolean(required=False)
                            )
 
     def resolve_user(self, args, context, info):
@@ -274,6 +275,11 @@ class Query(graphene.ObjectType):
             task_list = [t for t in task_list if t['done']]
         elif args.get('done', None) is False:
             task_list = [t for t in task_list if not t['done']]
+
+        if args.get('highlighted', None) is True:
+            task_list = [t for t in task_list if t['highlighted']]
+        elif args.get('highlighted', None) is False:
+            task_list = [t for t in task_list if not t['highlighted']]
 
         if args.get('latest', None) is not None:
             sorted_list = sorted(task_list, key=itemgetter('published_date'), reverse=True)
