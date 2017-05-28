@@ -221,8 +221,10 @@ class Query(graphene.ObjectType):
     tasks = graphene.List(Task,
                             token=graphene.String(required=True),
                            _id=graphene.String(required=False),
-                           latest=graphene.Int(required=False)
+                           latest=graphene.Int(required=False),
+                           done=graphene.Boolean(required=False)
                            )
+
     def resolve_group(self, args, context, info):
         group = mongo.db.groups.find_one({'_id': ObjectId(args['_id'])})
         user = self_info(args['token'])
@@ -232,6 +234,7 @@ class Query(graphene.ObjectType):
     def resolve_tasks(self, args, context, info):
         user = self_info(args['token'])
         task_list = []
+
         if args.get('_id', None) is not None:
             one_task = mongo.db['tasks'].find_one({"_id":ObjectId(args['_id'])})
             one_task['current_user_id'] = user._id
@@ -252,11 +255,18 @@ class Query(graphene.ObjectType):
                         task['done'] = False
                     task['current_user_id'] = user._id
                     task_list.append(task)
-            if args.get('latest', None) is not None:
-                sorted_list = sorted(task_list, key=itemgetter('published_date'), reverse=True)
-                task_list = sorted_list[:args['latest']]
+
+        if args.get('done', None) is True:
+            task_list = [t for t in task_list if t['done']]
+        elif args.get('done', None) is False:
+            task_list = [t for t in task_list if not t['done']]
+
+        if args.get('latest', None) is not None:
+            sorted_list = sorted(task_list, key=itemgetter('published_date'), reverse=True)
+            task_list = sorted_list[:args['latest']]
 
         return [Task(**task) for task in task_list]
+
 
 class ChangeSettings(graphene.Mutation):
     class Input:
