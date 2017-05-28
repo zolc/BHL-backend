@@ -149,6 +149,7 @@ def toggle_done(token, task_id):
         mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_done': task['users_done']}})
         return True
     task['users_done'].append(user_id)
+    print(task['users_done'], file=sys.stderr)
     mongo.db.tasks.update_one({'_id': ObjectId(task_id)}, {'$set': {'users_done': task['users_done']}})
     return True
 

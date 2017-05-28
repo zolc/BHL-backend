@@ -89,7 +89,9 @@ class Group(graphene.ObjectType):
     password = graphene.String()
     admins = graphene.List(lambda: User)
     users = graphene.List(lambda: User)
-    tasks = graphene.List(lambda: Task)
+    tasks = graphene.List(lambda: Task,
+                            done=graphene.Boolean(),
+                            highlighted=graphene.Boolean())
     completed_tasks = graphene.List(lambda: Task)
     uncompleted_tasks = graphene.List(lambda: Task)
     info = graphene.List(lambda: Info)
@@ -119,16 +121,23 @@ class Group(graphene.ObjectType):
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': ObjectId(self._id)})
         for task in tasks_from_group:
-            task['current_user_id'] = self._id
-            if self._id in task['users_highlighted']:
+            task['current_user_id'] = self.current_user_id
+            if self.current_user_id in task['users_highlighted']:
                 task['highlighted'] = True
             else:
                 task['highlighted'] = False
-            if self._id in task['users_done']:
+            if self.current_user_id in task['users_done']:
                 task['done'] = True
             else:
                 task['done'] = False
-            tasks.append(task)
+            if (   (args.get('done', None) is True and task['done'])
+                or (args.get('done', None) is False and not task['done'])
+                or (args.get('highlighted', None) is True and task['highlighted'])
+                or (args.get('highlighted', None) is False and not task['highlighted'])
+                or (args.get('done', None) is None and args.get('highlighted', None) is None)
+                    ):
+                tasks.append(task)
+
         return [Task(**kwargs) for kwargs in tasks]
 
     def resolve_completed_tasks(self, args, context, info):
