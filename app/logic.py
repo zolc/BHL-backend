@@ -12,6 +12,7 @@ import jwt
 from twilio.rest import Client
 import smtplib
 from bson.objectid import ObjectId
+from datetime import date
 
 
 def sign_in(username, password):
@@ -110,7 +111,7 @@ def change_settings(token, email, phone, password):
     return True
 
 
-def add_to_tasks(token, group_id, title, description=None, due_date=None):
+def add_to_tasks(token, group_id, title, due_date, description):
     user = self_info(token)
     if is_admin(user.username, group_id):
         # date = datetime.now()
@@ -126,9 +127,17 @@ def add_to_tasks(token, group_id, title, description=None, due_date=None):
             "users_important": [],
             "creator": user.username
         }
-        mongo.db['tasks'].insert_one(record)
+        task_id = mongo.db['tasks'].insert_one(record).inserted_id
+        if due_date is not None:
+            group = mongo.db.groups.find_one({'_id': ObjectId(group_id)})
+            for user in group['users']:
+                plan_event(task_id, user)
         return True
     return False
+
+
+def plan_event(task_id, user_id):
+    return True
 
 
 def toggle_task_completed(token, task_id):
@@ -274,9 +283,9 @@ def delete_group(token, group_id):
     return True
 
 
-def send_mail_notification(token, task_id):
-    user = self_info(token)
-    if user is None or user.email is None:
+def send_mail_notification(user_id, task_id):
+    user = mongo.db.users.find_one({'_id': user_id})
+    if user is None or user['email'] is None:
         return False
     task = mongo.db.tasks.find_one({'_id': ObjectId(task_id)})
     if task is None:

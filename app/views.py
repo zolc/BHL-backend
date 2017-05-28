@@ -67,13 +67,13 @@ def reset_db():
     _id = mongo.db.groups.find_one({"name": "ASD 2 D4"})["_id"]
     _id2 = mongo.db.groups.find_one({"name": "SOP 2"})["_id"]
     register_to_group(token, _id2, "niktniezda")
-    add_to_tasks(token, _id, "Przygotowanie do kolokwium ASD2", "Zakres: wykłady 1 - 10")
-    add_to_tasks(token, _id, "Część domowa z LAB 12", "Rozwiązania proszę wysłać na maila asd@mini.pw.edu.pl","May 28 2017 12:00:00")
-    add_to_tasks(token, _id, "Egzamin", "Łatwy nie będzie", "May 28 2017 12:00:00")
+    add_to_tasks(token, _id, "Przygotowanie do kolokwium ASD2","May 28 2017 12:00:00", "Zakres: wykłady 1 - 10")
+    add_to_tasks(token, _id, "Część domowa z LAB 12", "May 28 2017 12:00:00","Rozwiązania proszę wysłać na maila asd@mini.pw.edu.pl")
+    add_to_tasks(token, _id, "Egzamin","May 28 2017 12:00:00", "Łatwy nie będzie")
     add_to_info(token, _id, "Zakres materiału na LAB13", "Description")
     add_to_info(token, _id, "Osoby nie posiadające 50 punktów mogą zaliczyć egzamin po spełnieniu dodatkowych warunków.", "Należy przygotować własną implementację algorytmu Hoare'a")
-    add_to_tasks(token2, _id2, "Poprawa laboratoriów 3 i 4", "Poprawa odbędzie się jutro o godzinie 14:00 w sali 218", "May 29 2017 14:00:00")
-    add_to_tasks(token2, _id2, "Wyniki z laboratorium 2", "Wyniki dostępne na mojej stronie")
+    add_to_tasks(token2, _id2, "Poprawa laboratoriów 3 i 4","May 28 2017 12:00:00", "Poprawa odbędzie się jutro o godzinie 14:00 w sali 218")
+    add_to_tasks(token2, _id2, "Wyniki z laboratorium 2","May 28 2017 12:00:00","Wyniki dostępne na mojej stronie")
     # add_to_tasks(token2, _id2, "test", "sdad")
     # add_to_info(token, _id, "Title", "Description")
     return 'DB RESETED'
