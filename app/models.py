@@ -5,9 +5,22 @@ from . import app, mongo
 import jwt
 import sys
 
-from .logic import add_to_users, sign_in, self_info, create_group, add_to_info, add_to_tasks, add_admin_to_group, \
-    register_to_group, remove_admin_from_group, remove_from_group, delete_group, toggle_task_completed, \
-    toggle_task_important, change_settings
+from .logic import (
+    add_to_users,
+    sign_in,
+    self_info,
+    create_group,
+    add_to_info,
+    add_to_tasks,
+    add_admin_to_group,
+    register_to_group,
+    remove_admin_from_group,
+    remove_from_group,
+    delete_group,
+    toggle_task_completed,
+    toggle_task_important,
+    change_settings,
+    send_mail_notification)
 
 
 class User(graphene.ObjectType):
@@ -153,8 +166,8 @@ class Task(graphene.ObjectType):
     group = graphene.Field(lambda: Group)
     current_user_id = graphene.String()
 
-    def resolve_group(self,args,context,info):
-        result = mongo.db.groups.find_one({'_id':self.group_id})
+    def resolve_group(self, args, context, info):
+        result = mongo.db.groups.find_one({'_id': self.group_id})
         result['current_user_id'] = self.current_user_id
         return Group(**result)
 
@@ -423,6 +436,22 @@ class ToggleImportant(graphene.Mutation):
         return ToggleImportant(success=result)
 
 
+# Only for debugging
+class SendMail(graphene.Mutation):
+    class Input:
+        token = graphene.String()
+        task_id = graphene.String()
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    def mutate(root, input, context, info):
+        token = input.get('token')
+        task_id = input.get('task_id')
+        result = send_mail_notification(token, task_id)
+        return SendMail(success=result)
+
+
 class Mutation(graphene.ObjectType):
     SignUp = SignUp.Field()
     AddTask = AddTask.Field()
@@ -438,6 +467,7 @@ class Mutation(graphene.ObjectType):
     ToggleComplete = ToggleComplete.Field()
     ToggleImportant = ToggleImportant.Field()
     ChangeSettings = ChangeSettings.Field()
+    SendMail = SendMail.Field()
 
 
 schema = graphene.Schema(query=Query, auto_camelcase=False, mutation=Mutation)
