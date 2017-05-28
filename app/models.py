@@ -117,6 +117,7 @@ class Group(graphene.ObjectType):
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
         for task in tasks_from_group:
+            task['current_user_id'] = self.current_user_id
             if self.current_user_id in task['users_important']:
                 task['highlighted'] = True
             else:
@@ -131,6 +132,7 @@ class Group(graphene.ObjectType):
         tasks = []
         tasks_from_group = mongo.db.tasks.find({'group_id': self._id})
         for task in tasks_from_group:
+            task['current_user_id'] = self.current_user_id
             if self.current_user_id in task['users_important']:
                 task['highlighted'] = True
             else:
